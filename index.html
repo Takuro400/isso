@@ -728,74 +728,237 @@ function stopListening() {
   }
 }
 
-/* ── Voice parser ──
-   Handles patterns like:
-   「生2、ハイボール1、レモンサワー3」
-   「なま に はい いち」
-   「生を2杯、ハイボールを1つ」
-*/
-function parseVoiceOrder(text) {
-  // Build alias map from current drinks
-  const aliasMap = []; // [{aliases, id, name}]
+/* ══════════════════════════════════════
+   VOICE PARSER  v2
+   ─────────────────────────────────────
+   方針:
+   1. 漢数字・読み数字を先に変換（ただし飲み物名に含まれる音は除外）
+   2. 飲み物名を長い順にマッチ（ハイボール→ハイ の順で誤爆防止）
+   3. 飲み物名の直後の数字だけを使う（前後4文字以内）
+   4. 確認モーダルを出してから反映（誤認識を防ぐ）
+══════════════════════════════════════ */
+
+// 全エイリアスマスター（読み方のバリエーション）
+const DRINK_ALIASES = {
+  beer:     ['生ビール','なまびーる','なまびる','生びーる','生びる','なまビール','なま','生'],
+  highball: ['ハイボール','はいぼーる','はいぼる','ハイボ','はいぼ'],
+  lemon:    ['レモンサワー','れもんさわー','レモサワー','れもさわー','レモン','れもん'],
+  shochu:   ['焼酎ロック','しょうちゅうろっく','焼酎','しょうちゅう','ロック','ろっく'],
+  wine:     ['ワイン','わいん','赤ワイン','白ワイン'],
+  oolong:   ['ウーロン茶','うーろんちゃ','ウーロン','うーろん','烏龍茶','烏龍'],
+};
+
+// 数字変換テーブル（読みが飲み物名と被らないよう、単独の読みのみ）
+const NUM_MAP = [
+  // 漢数字（先に変換）
+  {re:/十/g,  v:'10'},
+  {re:/九/g,  v:'9'},
+  {re:/八/g,  v:'8'},
+  {re:/七/g,  v:'7'},
+  {re:/六/g,  v:'6'},
+  {re:/五/g,  v:'5'},
+  {re:/四/g,  v:'4'},
+  {re:/三/g,  v:'3'},
+  {re:/二/g,  v:'2'},
+  {re:/一/g,  v:'1'},
+  // ひらがな読み（境界付きで誤爆防止）
+  {re:/じゅう/g, v:'10'},
+  {re:/きゅう/g, v:'9'},
+  {re:/はち/g,   v:'8'},
+  {re:/なな/g,   v:'7'},
+  {re:/しち/g,   v:'7'},
+  {re:/ろく/g,   v:'6'},
+  {re:/ごほん/g, v:'5本'}, // 「5本」を保護
+  {re:/ご(?!ざ|め|ろ)/g, v:'5'}, // 「ございます」などは除く
+  {re:/よん/g,   v:'4'},
+  {re:/さん(?!ぽ|が|び)/g, v:'3'}, // 「さんぽ」などは除く
+  {re:/に(?=つ|はい|ほん|本|杯|個)/g, v:'2'}, // 助数詞の前のみ
+  {re:/いち(?=つ|ほん|本|杯|個)/g, v:'1'},
+];
+
+let pendingOrders = []; // 確認待ちの注文
+
+function parseVoiceOrder(rawText) {
+  voiceResult.innerHTML = '';
+  pendingOrders = [];
+
+  // ── Step1: テキストを正規化 ──
+  let text = rawText;
+
+  // 不要語を削除
+  text = text.replace(/を|が|で|は|の|お願いします|ください|ちょうだい|頼みます/g, ' ');
+
+  // 助数詞を数字に統合（例:「2杯」→「2 」）
+  text = text.replace(/(\d+)\s*[杯本個つ缶]/g, '$1 ');
+
+  // 漢数字・読み数字を変換
+  NUM_MAP.forEach(({re, v}) => { text = text.replace(re, v); });
+
+  // 全角数字 → 半角
+  text = text.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+
+  const lower = text.toLowerCase();
+
+  // ── Step2: 飲み物をマッチ（長い名前優先） ──
+  // 現在登録されている飲み物のエイリアスを構築
+  const aliasMap = [];
   drinks.forEach(d => {
-    const als = d.aliases && d.aliases.length ? d.aliases : [d.name];
-    aliasMap.push({ aliases: als.map(a=>a.toLowerCase()), id: d.id, name: d.name });
+    // デフォルトエイリアス or 保存済みエイリアス
+    const baseAliases = DRINK_ALIASES[d.id] || [];
+    const saved = (d.aliases || []).filter(a => a.length > 0);
+    const all = [...new Set([d.name, ...baseAliases, ...saved])];
+    // 長い順にソート（誤爆防止）
+    all.sort((a,b) => b.length - a.length);
+    aliasMap.push({ id: d.id, name: d.name, aliases: all });
   });
 
-  // Number words → digits
-  const numWords = {'一':'1','二':'2','三':'3','四':'4','五':'5','六':'6','七':'7','八':'8','九':'9','十':'10',
-    'いち':'1','に':'2','さん':'3','し':'4','よん':'4','ご':'5','ろく':'6','なな':'7','しち':'7','はち':'8','きゅう':'9','じゅう':'10'};
-  let normalized = text;
-  Object.entries(numWords).forEach(([k,v])=>{ normalized = normalized.replace(new RegExp(k,'g'), v); });
+  // 各飲み物について最初にマッチしたエイリアス位置を記録
+  const matches = []; // {id, name, aliasLen, pos, count}
+  const usedPositions = new Set();
 
-  // Remove fillers
-  normalized = normalized.replace(/を|個|杯|本|つ|ください|お願い|ちょうだい/g, ' ');
-
-  const results = []; // [{name, count, matched}]
-
-  // Strategy: find each drink alias in text, then look for nearby number
   aliasMap.forEach(drink => {
-    let found = false;
     for (const alias of drink.aliases) {
-      const idx = normalized.toLowerCase().indexOf(alias);
-      if (idx === -1) continue;
-      found = true;
-      // Look for a number within ±8 chars of the alias
-      const window = normalized.slice(Math.max(0, idx-4), idx+alias.length+8);
-      const numMatch = window.match(/\d+/);
-      const count = numMatch ? Math.min(parseInt(numMatch[0]), 20) : 1;
-      results.push({ name: drink.name, id: drink.id, count, matched: true });
-      break;
+      const al = alias.toLowerCase();
+      let pos = lower.indexOf(al);
+      if (pos === -1) continue;
+      // すでに別の飲み物でカバーされた範囲はスキップ
+      if ([...usedPositions].some(p => Math.abs(p - pos) < al.length)) continue;
+
+      // このエイリアスの直後（最大6文字以内）の数字を探す
+      const after = text.slice(pos + al.length, pos + al.length + 8);
+      const numMatch = after.match(/^\s*(\d+)/);
+      const count = numMatch ? Math.min(parseInt(numMatch[1]), 20) : 1;
+
+      matches.push({ id: drink.id, name: drink.name, pos, count });
+      for (let i = pos; i < pos + al.length; i++) usedPositions.add(i);
+      break; // このdrinkはマッチ済み
     }
   });
 
-  // Show chips
-  voiceResult.innerHTML = '';
-  if (results.length === 0) {
+  // 位置順にソート
+  matches.sort((a,b) => a.pos - b.pos);
+
+  if (matches.length === 0) {
     voiceStatus.className = 'error';
-    voiceStatus.textContent = '認識できませんでした。もう一度お試しください';
-    const chip = document.createElement('div');
-    chip.className = 'result-chip unmatched';
-    chip.textContent = '「' + text + '」— 該当なし';
-    voiceResult.appendChild(chip);
+    voiceStatus.textContent = '「' + rawText + '」— 聞き取れませんでした';
     return;
   }
 
-  results.forEach(r => {
-    addOrder(r.id, r.count);
-    const chip = document.createElement('div');
-    chip.className = 'result-chip';
-    chip.textContent = r.name + ' ＋' + r.count;
-    voiceResult.appendChild(chip);
+  // ── Step3: 確認モーダルを表示 ──
+  pendingOrders = matches;
+  showConfirmModal(rawText, matches);
+}
+
+/* ── 確認モーダル ── */
+function showConfirmModal(rawText, orders) {
+  // 既存のモーダルを削除
+  const old = document.getElementById('voiceConfirmModal');
+  if (old) old.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'voiceConfirmModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:300;
+    background:rgba(10,10,20,0.88);
+    display:flex;align-items:flex-end;justify-content:center;
+  `;
+
+  const panel = document.createElement('div');
+  panel.style.cssText = `
+    background:#16213e;border-radius:20px 20px 0 0;padding:20px 16px 32px;
+    width:100%;border-top:2px solid #fd79a8;
+  `;
+
+  // タイトル
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:0.8rem;font-weight:700;color:#8892a4;text-align:center;margin-bottom:4px;letter-spacing:0.06em;';
+  title.textContent = '認識結果の確認';
+  panel.appendChild(title);
+
+  const raw = document.createElement('div');
+  raw.style.cssText = 'font-size:0.78rem;color:#8892a4;text-align:center;margin-bottom:16px;';
+  raw.textContent = '「' + rawText + '」';
+  panel.appendChild(raw);
+
+  // 各オーダーの確認行
+  orders.forEach((order, idx) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:12px;background:rgba(255,255,255,0.05);border-radius:12px;padding:10px 14px;';
+
+    const nameEl = document.createElement('div');
+    nameEl.style.cssText = 'flex:1;font-weight:700;font-size:1rem;';
+    nameEl.textContent = order.name;
+    row.appendChild(nameEl);
+
+    // ─ 数量を増減できるコントロール ─
+    const minus = document.createElement('button');
+    minus.textContent = '－';
+    minus.style.cssText = 'width:34px;height:34px;border-radius:8px;border:1.5px solid #e94560;background:rgba(233,69,96,0.15);color:#e94560;font-size:1rem;font-weight:900;cursor:pointer;';
+
+    const countEl = document.createElement('div');
+    countEl.style.cssText = 'font-family:"Bebas Neue",sans-serif;font-size:2rem;color:#f5a623;min-width:2.5rem;text-align:center;line-height:1;';
+    countEl.textContent = order.count;
+
+    const plus = document.createElement('button');
+    plus.textContent = '＋';
+    plus.style.cssText = 'width:34px;height:34px;border-radius:8px;border:1.5px solid #2ecc71;background:rgba(46,204,113,0.15);color:#2ecc71;font-size:1rem;font-weight:900;cursor:pointer;';
+
+    minus.addEventListener('click', () => {
+      if (orders[idx].count > 0) { orders[idx].count--; countEl.textContent = orders[idx].count; }
+    });
+    plus.addEventListener('click', () => {
+      if (orders[idx].count < 20) { orders[idx].count++; countEl.textContent = orders[idx].count; }
+    });
+
+    row.appendChild(minus);
+    row.appendChild(countEl);
+    row.appendChild(plus);
+    panel.appendChild(row);
   });
 
+  // ボタン行
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:10px;margin-top:6px;';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'キャンセル';
+  cancelBtn.style.cssText = 'flex:1;padding:14px;border-radius:12px;border:1.5px solid #8892a4;background:none;color:#8892a4;font-family:"Noto Sans JP",sans-serif;font-size:0.9rem;font-weight:700;cursor:pointer;';
+  cancelBtn.addEventListener('click', () => {
+    modal.remove();
+    voiceStatus.className = 'idle';
+    voiceStatus.textContent = 'マイクボタンを押して話してください';
+  });
+
+  const okBtn = document.createElement('button');
+  okBtn.textContent = '✓ 追加する';
+  okBtn.style.cssText = 'flex:2;padding:14px;border-radius:12px;border:none;background:#2ecc71;color:#0a2e1a;font-family:"Noto Sans JP",sans-serif;font-size:1rem;font-weight:900;cursor:pointer;';
+  okBtn.addEventListener('click', () => {
+    modal.remove();
+    const confirmed = orders.filter(o => o.count > 0);
+    confirmed.forEach(r => addOrder(r.id, r.count));
+    voiceResult.innerHTML = '';
+    confirmed.forEach(r => {
+      const chip = document.createElement('div');
+      chip.className = 'result-chip';
+      chip.textContent = r.name + ' ＋' + r.count;
+      voiceResult.appendChild(chip);
+    });
+    voiceStatus.className = 'success';
+    voiceStatus.textContent = '✓ ' + confirmed.map(r=>r.name+'×'+r.count).join('、') + ' を追加';
+    setTimeout(()=>{ voiceStatus.className='idle'; voiceStatus.textContent='マイクボタンを押して話してください'; voiceResult.innerHTML=''; }, 3500);
+  });
+
+  btnRow.appendChild(cancelBtn);
+  btnRow.appendChild(okBtn);
+  panel.appendChild(btnRow);
+  modal.appendChild(panel);
+
+  // 背景タップでキャンセル
+  modal.addEventListener('click', e => { if(e.target===modal) cancelBtn.click(); });
+  document.body.appendChild(modal);
+
   voiceStatus.className = 'success';
-  voiceStatus.textContent = '✓ ' + results.map(r=>r.name+'×'+r.count).join('、') + ' を追加しました';
-  setTimeout(()=>{
-    voiceStatus.className='idle';
-    voiceStatus.textContent='マイクボタンを押して話してください';
-    voiceResult.innerHTML='';
-  }, 4000);
+  voiceStatus.textContent = '確認してから「追加する」を押してください';
 }
 
 /* ══ EMOJI PICKER ══ */
