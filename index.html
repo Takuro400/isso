@@ -390,6 +390,7 @@
       <div id="voiceStatus" class="idle">マイクボタンを押して話してください</div>
       <div id="noSupportMsg">⚠️ このブラウザは音声入力に非対応です</div>
     </div>
+    <button id="btnApiKey" title="APIキー設定" style="background:rgba(255,255,255,0.06);border:1px solid #3a4a6c;color:#8892a4;border-radius:8px;padding:6px 8px;font-size:0.7rem;font-weight:700;cursor:pointer;white-space:nowrap;line-height:1.3;">🔑<br>設定</button>
   </div>
   <div id="voiceResult"></div>
 
@@ -664,11 +665,76 @@ function updateAdvice() {
 }
 
 /* ══════════════════════════════════════
-   VOICE INPUT
+   API KEY MANAGEMENT
+══════════════════════════════════════ */
+let anthropicApiKey = '';
+
+function loadApiKey() {
+  try { anthropicApiKey = localStorage.getItem('isso_api_key') || ''; } catch(e) {}
+}
+function saveApiKey(key) {
+  anthropicApiKey = key;
+  try { localStorage.setItem('isso_api_key', key); } catch(e) {}
+}
+
+function showApiKeyModal(onSaved) {
+  const old = document.getElementById('apiKeyModal');
+  if (old) old.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'apiKeyModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:400;background:rgba(10,10,20,0.92);display:flex;align-items:center;justify-content:center;padding:20px;';
+
+  const panel = document.createElement('div');
+  panel.style.cssText = 'background:#16213e;border-radius:20px;padding:24px 20px;width:100%;max-width:420px;border:2px solid #fd79a8;';
+
+  panel.innerHTML = `
+    <div style="font-size:1.5rem;text-align:center;margin-bottom:6px;">🔑</div>
+    <div style="font-size:1rem;font-weight:900;text-align:center;margin-bottom:6px;letter-spacing:0.04em;">APIキーの設定</div>
+    <div style="font-size:0.78rem;color:#8892a4;text-align:center;margin-bottom:20px;line-height:1.7;">
+      <a href="https://console.anthropic.com" target="_blank" style="color:#fd79a8;">console.anthropic.com</a> でキーを取得して<br>下に貼り付けてください。<br>
+      このデバイスのブラウザにのみ保存されます。
+    </div>
+    <input id="apiKeyInput" type="password"
+      placeholder="sk-ant-api03-..."
+      style="width:100%;background:rgba(255,255,255,0.06);border:1.5px solid rgba(253,121,168,0.5);border-radius:10px;color:#eaeaea;font-family:'Noto Sans JP',sans-serif;font-size:0.88rem;padding:12px 14px;outline:none;margin-bottom:8px;">
+    <div id="apiKeyErr" style="font-size:0.75rem;color:#e74c3c;min-height:18px;margin-bottom:10px;text-align:center;"></div>
+    <button id="apiKeySaveBtn" style="width:100%;padding:14px;border-radius:12px;border:none;background:#fd79a8;color:#1a1a2e;font-family:'Noto Sans JP',sans-serif;font-size:1rem;font-weight:900;cursor:pointer;margin-bottom:10px;">保存して続ける</button>
+    <button id="apiKeyCancelBtn" style="width:100%;padding:10px;border-radius:12px;border:1.5px solid #8892a4;background:none;color:#8892a4;font-family:'Noto Sans JP',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;">キャンセル</button>
+  `;
+
+  modal.appendChild(panel);
+  document.body.appendChild(modal);
+
+  const input = document.getElementById('apiKeyInput');
+  const errEl = document.getElementById('apiKeyErr');
+
+  document.getElementById('apiKeySaveBtn').addEventListener('click', () => {
+    const val = input.value.trim();
+    if (!val.startsWith('sk-ant-')) {
+      errEl.textContent = '「sk-ant-」で始まるキーを入力してください';
+      return;
+    }
+    saveApiKey(val);
+    modal.remove();
+    if (onSaved) onSaved();
+  });
+
+  document.getElementById('apiKeyCancelBtn').addEventListener('click', () => {
+    modal.remove();
+    voiceStatus.className = 'idle';
+    voiceStatus.textContent = 'マイクボタンを押して話してください';
+  });
+
+  setTimeout(() => input.focus(), 100);
+}
+
+/* ══════════════════════════════════════
+   VOICE INPUT + AI PARSER
 ══════════════════════════════════════ */
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null;
-let isListening = false;
+let isListening  = false;
 
 const btnVoice    = document.getElementById('btnVoice');
 const voiceStatus = document.getElementById('voiceStatus');
@@ -685,7 +751,7 @@ if (!SpeechRecognition) {
   recognition = new SpeechRecognition();
   recognition.lang = 'ja-JP';
   recognition.interimResults = true;
-  recognition.maxAlternatives = 3;
+  recognition.maxAlternatives = 5;   // 複数候補を取得して精度向上
   recognition.continuous = false;
 
   recognition.onstart = () => {
@@ -698,10 +764,16 @@ if (!SpeechRecognition) {
   };
 
   recognition.onresult = (e) => {
-    const transcript = Array.from(e.results)
-      .map(r => r[0].transcript).join('');
-    voiceStatus.textContent = '「' + transcript + '」';
-    if (e.results[0].isFinal) parseVoiceOrder(transcript);
+    // 全候補をまとめてAIに渡す（最終結果のみ）
+    if (!e.results[0].isFinal) {
+      voiceStatus.textContent = '🎤 ' + e.results[0][0].transcript + '…';
+      return;
+    }
+    // 複数候補を配列で収集
+    const candidates = Array.from(e.results[0]).map(r => r.transcript);
+    voiceStatus.className = 'listening';
+    voiceStatus.textContent = '🤖 AIが解析中…';
+    parseWithAI(candidates);
   };
 
   recognition.onerror = (e) => {
@@ -713,8 +785,13 @@ if (!SpeechRecognition) {
   recognition.onend = () => { stopListening(); };
 
   btnVoice.addEventListener('click', () => {
-    if (isListening) { recognition.stop(); stopListening(); }
-    else { try { recognition.start(); } catch(e){} }
+    if (isListening) { recognition.stop(); stopListening(); return; }
+    // APIキー確認
+    if (!anthropicApiKey) {
+      showApiKeyModal(() => { try { recognition.start(); } catch(e){} });
+      return;
+    }
+    try { recognition.start(); } catch(e) {}
   });
 }
 
@@ -728,151 +805,95 @@ function stopListening() {
   }
 }
 
-/* ══════════════════════════════════════
-   VOICE PARSER  v2
-   ─────────────────────────────────────
-   方針:
-   1. 漢数字・読み数字を先に変換（ただし飲み物名に含まれる音は除外）
-   2. 飲み物名を長い順にマッチ（ハイボール→ハイ の順で誤爆防止）
-   3. 飲み物名の直後の数字だけを使う（前後4文字以内）
-   4. 確認モーダルを出してから反映（誤認識を防ぐ）
-══════════════════════════════════════ */
+/* ── AI Parser ── */
+async function parseWithAI(candidates) {
+  // ドリンクメニュー一覧をAIに伝える
+  const menuList = drinks.map(d => `・${d.name}（ID: ${d.id}）`).join('\n');
+  const candidateText = candidates.map((c,i) => `候補${i+1}: 「${c}」`).join('\n');
 
-// 全エイリアスマスター（読み方のバリエーション）
-const DRINK_ALIASES = {
-  beer:     ['生ビール','なまびーる','なまびる','生びーる','生びる','なまビール','なま','生'],
-  highball: ['ハイボール','はいぼーる','はいぼる','ハイボ','はいぼ'],
-  lemon:    ['レモンサワー','れもんさわー','レモサワー','れもさわー','レモン','れもん'],
-  shochu:   ['焼酎ロック','しょうちゅうろっく','焼酎','しょうちゅう','ロック','ろっく'],
-  wine:     ['ワイン','わいん','赤ワイン','白ワイン'],
-  oolong:   ['ウーロン茶','うーろんちゃ','ウーロン','うーろん','烏龍茶','烏龍'],
-};
+  const prompt = `あなたは居酒屋のドリンク注文を解析するAIです。
+音声認識の結果（複数候補あり）からドリンクの注文を抽出してください。
 
-// 数字変換テーブル（読みが飲み物名と被らないよう、単独の読みのみ）
-const NUM_MAP = [
-  // 漢数字（先に変換）
-  {re:/十/g,  v:'10'},
-  {re:/九/g,  v:'9'},
-  {re:/八/g,  v:'8'},
-  {re:/七/g,  v:'7'},
-  {re:/六/g,  v:'6'},
-  {re:/五/g,  v:'5'},
-  {re:/四/g,  v:'4'},
-  {re:/三/g,  v:'3'},
-  {re:/二/g,  v:'2'},
-  {re:/一/g,  v:'1'},
-  // ひらがな読み（境界付きで誤爆防止）
-  {re:/じゅう/g, v:'10'},
-  {re:/きゅう/g, v:'9'},
-  {re:/はち/g,   v:'8'},
-  {re:/なな/g,   v:'7'},
-  {re:/しち/g,   v:'7'},
-  {re:/ろく/g,   v:'6'},
-  {re:/ごほん/g, v:'5本'}, // 「5本」を保護
-  {re:/ご(?!ざ|め|ろ)/g, v:'5'}, // 「ございます」などは除く
-  {re:/よん/g,   v:'4'},
-  {re:/さん(?!ぽ|が|び)/g, v:'3'}, // 「さんぽ」などは除く
-  {re:/に(?=つ|はい|ほん|本|杯|個)/g, v:'2'}, // 助数詞の前のみ
-  {re:/いち(?=つ|ほん|本|杯|個)/g, v:'1'},
-];
+【登録ドリンクメニュー】
+${menuList}
 
-let pendingOrders = []; // 確認待ちの注文
+【音声認識結果】
+${candidateText}
 
-function parseVoiceOrder(rawText) {
-  voiceResult.innerHTML = '';
-  pendingOrders = [];
+ルール:
+- 上記メニューの中から注文されたドリンクとその数量を抽出する
+- 数量が不明な場合は1とする
+- メニューにないドリンクは無視する
+- 複数候補のうち最も自然な解釈を選ぶ
+- 「なま」「生」→生ビール、「ハイ」「はいぼ」→ハイボール のように略称・口語も対応する
 
-  // ── Step1: テキストを正規化 ──
-  let text = rawText;
+必ず以下のJSON形式のみで返答してください（他の文章は一切不要）:
+{"orders":[{"id":"ドリンクID","name":"ドリンク名","count":数量},...],"raw":"最も自然な候補テキスト"}`;
 
-  // 不要語を削除
-  text = text.replace(/を|が|で|は|の|お願いします|ください|ちょうだい|頼みます/g, ' ');
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',  // 速度重視で軽量モデル
+        max_tokens: 300,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
 
-  // 助数詞を数字に統合（例:「2杯」→「2 」）
-  text = text.replace(/(\d+)\s*[杯本個つ缶]/g, '$1 ');
-
-  // 漢数字・読み数字を変換
-  NUM_MAP.forEach(({re, v}) => { text = text.replace(re, v); });
-
-  // 全角数字 → 半角
-  text = text.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
-
-  const lower = text.toLowerCase();
-
-  // ── Step2: 飲み物をマッチ（長い名前優先） ──
-  // 現在登録されている飲み物のエイリアスを構築
-  const aliasMap = [];
-  drinks.forEach(d => {
-    // デフォルトエイリアス or 保存済みエイリアス
-    const baseAliases = DRINK_ALIASES[d.id] || [];
-    const saved = (d.aliases || []).filter(a => a.length > 0);
-    const all = [...new Set([d.name, ...baseAliases, ...saved])];
-    // 長い順にソート（誤爆防止）
-    all.sort((a,b) => b.length - a.length);
-    aliasMap.push({ id: d.id, name: d.name, aliases: all });
-  });
-
-  // 各飲み物について最初にマッチしたエイリアス位置を記録
-  const matches = []; // {id, name, aliasLen, pos, count}
-  const usedPositions = new Set();
-
-  aliasMap.forEach(drink => {
-    for (const alias of drink.aliases) {
-      const al = alias.toLowerCase();
-      let pos = lower.indexOf(al);
-      if (pos === -1) continue;
-      // すでに別の飲み物でカバーされた範囲はスキップ
-      if ([...usedPositions].some(p => Math.abs(p - pos) < al.length)) continue;
-
-      // このエイリアスの直後（最大6文字以内）の数字を探す
-      const after = text.slice(pos + al.length, pos + al.length + 8);
-      const numMatch = after.match(/^\s*(\d+)/);
-      const count = numMatch ? Math.min(parseInt(numMatch[1]), 20) : 1;
-
-      matches.push({ id: drink.id, name: drink.name, pos, count });
-      for (let i = pos; i < pos + al.length; i++) usedPositions.add(i);
-      break; // このdrinkはマッチ済み
+    if (res.status === 401) {
+      stopListening();
+      voiceStatus.className = 'error';
+      voiceStatus.textContent = 'APIキーが無効です';
+      showApiKeyModal(null);
+      return;
     }
-  });
 
-  // 位置順にソート
-  matches.sort((a,b) => a.pos - b.pos);
+    if (!res.ok) throw new Error('API error ' + res.status);
 
-  if (matches.length === 0) {
+    const data = await res.json();
+    const text = data.content[0].text.trim();
+
+    // JSON抽出（```json ... ``` に包まれていても対応）
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('JSON not found');
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    if (!parsed.orders || parsed.orders.length === 0) {
+      voiceStatus.className = 'error';
+      voiceStatus.textContent = '「' + (parsed.raw || candidates[0]) + '」— 注文が聞き取れませんでした';
+      return;
+    }
+
+    showConfirmModal(parsed.raw || candidates[0], parsed.orders);
+
+  } catch(err) {
     voiceStatus.className = 'error';
-    voiceStatus.textContent = '「' + rawText + '」— 聞き取れませんでした';
-    return;
+    voiceStatus.textContent = '通信エラーが発生しました。再度お試しください';
+    console.error(err);
   }
-
-  // ── Step3: 確認モーダルを表示 ──
-  pendingOrders = matches;
-  showConfirmModal(rawText, matches);
 }
 
 /* ── 確認モーダル ── */
 function showConfirmModal(rawText, orders) {
-  // 既存のモーダルを削除
   const old = document.getElementById('voiceConfirmModal');
   if (old) old.remove();
 
   const modal = document.createElement('div');
   modal.id = 'voiceConfirmModal';
-  modal.style.cssText = `
-    position:fixed;inset:0;z-index:300;
-    background:rgba(10,10,20,0.88);
-    display:flex;align-items:flex-end;justify-content:center;
-  `;
+  modal.style.cssText = 'position:fixed;inset:0;z-index:300;background:rgba(10,10,20,0.88);display:flex;align-items:flex-end;justify-content:center;';
 
   const panel = document.createElement('div');
-  panel.style.cssText = `
-    background:#16213e;border-radius:20px 20px 0 0;padding:20px 16px 32px;
-    width:100%;border-top:2px solid #fd79a8;
-  `;
+  panel.style.cssText = 'background:#16213e;border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;border-top:2px solid #fd79a8;';
 
-  // タイトル
   const title = document.createElement('div');
   title.style.cssText = 'font-size:0.8rem;font-weight:700;color:#8892a4;text-align:center;margin-bottom:4px;letter-spacing:0.06em;';
-  title.textContent = '認識結果の確認';
+  title.textContent = '🤖 AI認識結果の確認';
   panel.appendChild(title);
 
   const raw = document.createElement('div');
@@ -880,7 +901,7 @@ function showConfirmModal(rawText, orders) {
   raw.textContent = '「' + rawText + '」';
   panel.appendChild(raw);
 
-  // 各オーダーの確認行
+  // 各オーダー行（＋／－で修正可能）
   orders.forEach((order, idx) => {
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:12px;background:rgba(255,255,255,0.05);border-radius:12px;padding:10px 14px;';
@@ -888,35 +909,26 @@ function showConfirmModal(rawText, orders) {
     const nameEl = document.createElement('div');
     nameEl.style.cssText = 'flex:1;font-weight:700;font-size:1rem;';
     nameEl.textContent = order.name;
-    row.appendChild(nameEl);
 
-    // ─ 数量を増減できるコントロール ─
     const minus = document.createElement('button');
     minus.textContent = '－';
-    minus.style.cssText = 'width:34px;height:34px;border-radius:8px;border:1.5px solid #e94560;background:rgba(233,69,96,0.15);color:#e94560;font-size:1rem;font-weight:900;cursor:pointer;';
+    minus.style.cssText = 'width:36px;height:36px;border-radius:8px;border:1.5px solid #e94560;background:rgba(233,69,96,0.15);color:#e94560;font-size:1.1rem;font-weight:900;cursor:pointer;';
 
     const countEl = document.createElement('div');
-    countEl.style.cssText = 'font-family:"Bebas Neue",sans-serif;font-size:2rem;color:#f5a623;min-width:2.5rem;text-align:center;line-height:1;';
+    countEl.style.cssText = 'font-family:"Bebas Neue",sans-serif;font-size:2.2rem;color:#f5a623;min-width:2.5rem;text-align:center;line-height:1;';
     countEl.textContent = order.count;
 
     const plus = document.createElement('button');
     plus.textContent = '＋';
-    plus.style.cssText = 'width:34px;height:34px;border-radius:8px;border:1.5px solid #2ecc71;background:rgba(46,204,113,0.15);color:#2ecc71;font-size:1rem;font-weight:900;cursor:pointer;';
+    plus.style.cssText = 'width:36px;height:36px;border-radius:8px;border:1.5px solid #2ecc71;background:rgba(46,204,113,0.15);color:#2ecc71;font-size:1.1rem;font-weight:900;cursor:pointer;';
 
-    minus.addEventListener('click', () => {
-      if (orders[idx].count > 0) { orders[idx].count--; countEl.textContent = orders[idx].count; }
-    });
-    plus.addEventListener('click', () => {
-      if (orders[idx].count < 20) { orders[idx].count++; countEl.textContent = orders[idx].count; }
-    });
+    minus.addEventListener('click', () => { if(orders[idx].count>0){orders[idx].count--;countEl.textContent=orders[idx].count;} });
+    plus.addEventListener('click',  () => { if(orders[idx].count<20){orders[idx].count++;countEl.textContent=orders[idx].count;} });
 
-    row.appendChild(minus);
-    row.appendChild(countEl);
-    row.appendChild(plus);
+    row.appendChild(nameEl); row.appendChild(minus); row.appendChild(countEl); row.appendChild(plus);
     panel.appendChild(row);
   });
 
-  // ボタン行
   const btnRow = document.createElement('div');
   btnRow.style.cssText = 'display:flex;gap:10px;margin-top:6px;';
 
@@ -925,8 +937,7 @@ function showConfirmModal(rawText, orders) {
   cancelBtn.style.cssText = 'flex:1;padding:14px;border-radius:12px;border:1.5px solid #8892a4;background:none;color:#8892a4;font-family:"Noto Sans JP",sans-serif;font-size:0.9rem;font-weight:700;cursor:pointer;';
   cancelBtn.addEventListener('click', () => {
     modal.remove();
-    voiceStatus.className = 'idle';
-    voiceStatus.textContent = 'マイクボタンを押して話してください';
+    voiceStatus.className='idle'; voiceStatus.textContent='マイクボタンを押して話してください';
   });
 
   const okBtn = document.createElement('button');
@@ -948,17 +959,13 @@ function showConfirmModal(rawText, orders) {
     setTimeout(()=>{ voiceStatus.className='idle'; voiceStatus.textContent='マイクボタンを押して話してください'; voiceResult.innerHTML=''; }, 3500);
   });
 
-  btnRow.appendChild(cancelBtn);
-  btnRow.appendChild(okBtn);
-  panel.appendChild(btnRow);
-  modal.appendChild(panel);
-
-  // 背景タップでキャンセル
-  modal.addEventListener('click', e => { if(e.target===modal) cancelBtn.click(); });
+  btnRow.appendChild(cancelBtn); btnRow.appendChild(okBtn);
+  panel.appendChild(btnRow); modal.appendChild(panel);
+  modal.addEventListener('click', e=>{ if(e.target===modal) cancelBtn.click(); });
   document.body.appendChild(modal);
 
   voiceStatus.className = 'success';
-  voiceStatus.textContent = '確認してから「追加する」を押してください';
+  voiceStatus.textContent = '確認して「追加する」を押してください';
 }
 
 /* ══ EMOJI PICKER ══ */
@@ -1021,8 +1028,13 @@ function showToast(msg){ const t=document.getElementById('toast'); t.textContent
 /* ══ TICK ══ */
 setInterval(()=>{ if(!editMode){ drinks.forEach(d=>renderCard(d.id)); updateAdvice(); } },10000);
 
+// APIキー再設定ボタン
+document.getElementById('btnApiKey').addEventListener('click', () => {
+  showApiKeyModal(null);
+});
+
 /* ══ INIT ══ */
-loadDrinks(); syncRuntime(); rebuildGrid(); renderTotal(); updateAdvice(); initManual();
+loadApiKey(); loadDrinks(); syncRuntime(); rebuildGrid(); renderTotal(); updateAdvice(); initManual();
 </script>
 </body>
 </html>
