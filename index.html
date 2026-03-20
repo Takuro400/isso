@@ -19,6 +19,7 @@
     --warn-yellow: #f39c12;
     --warn-red: #e74c3c;
     --edit-color: #a29bfe;
+    --manual-color: #00cec9;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -32,6 +33,41 @@
     flex-direction: column;
     overflow-x: hidden;
   }
+
+  /* ══ BOTTOM TAB BAR ══ */
+  #tabBar {
+    display: flex;
+    background: var(--surface);
+    border-top: 2px solid #2a3a5c;
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    z-index: 50;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 10px 4px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: color 0.2s;
+    letter-spacing: 0.03em;
+  }
+  .tab-btn .tab-icon { font-size: 1.3rem; line-height: 1; }
+  .tab-btn.active { color: var(--accent); }
+  .tab-btn.active.manual-tab { color: var(--manual-color); }
+
+  /* ══ PAGES ══ */
+  .page { display: none; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+  .page.active { display: flex; }
 
   /* ── HEADER ── */
   header {
@@ -53,7 +89,6 @@
     color: var(--accent);
   }
   .logo span { color: var(--text); }
-
   .header-right { display: flex; align-items: center; gap: 8px; }
 
   .total-badge {
@@ -69,7 +104,6 @@
   body.edit-mode .total-badge { opacity: 0.3; pointer-events: none; }
   .total-badge .num { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; line-height: 1; }
 
-  /* edit mode toggle button */
   .btn-edit-toggle {
     border-radius: 8px;
     padding: 7px 13px;
@@ -77,20 +111,15 @@
     font-size: 0.8rem;
     font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s, border-color 0.2s, color 0.2s;
-    letter-spacing: 0.03em;
     background: rgba(162,155,254,0.12);
     border: 1.5px solid var(--edit-color);
     color: var(--edit-color);
     white-space: nowrap;
+    transition: background 0.2s;
   }
   .btn-edit-toggle:active { background: rgba(162,155,254,0.28); }
-  body.edit-mode .btn-edit-toggle {
-    background: var(--edit-color);
-    color: #1a1a2e;
-  }
+  body.edit-mode .btn-edit-toggle { background: var(--edit-color); color: #1a1a2e; }
 
-  /* add button – only in edit mode */
   .btn-add-card {
     border-radius: 8px;
     padding: 7px 11px;
@@ -107,7 +136,7 @@
   body.edit-mode .btn-add-card { display: block; }
   .btn-add-card:active { background: rgba(46,204,113,0.35); }
 
-  /* ── EDIT MODE BAR ── */
+  /* ── EDIT BAR ── */
   #editBar {
     display: none;
     background: rgba(162,155,254,0.1);
@@ -139,7 +168,7 @@
   .advice-busy    { background: var(--warn-red); color: #fff; }
   .advice-warning { background: var(--warn-yellow); color: #1a1a2e; }
 
-  /* ── GRID ── */
+  /* ── DRINK GRID ── */
   #drinkGrid {
     flex: 1;
     display: grid;
@@ -149,7 +178,7 @@
     overflow-y: auto;
   }
 
-  /* ── DRINK CARD (normal) ── */
+  /* ── DRINK CARD ── */
   .drink-card {
     background: var(--card);
     border-radius: 16px;
@@ -165,16 +194,8 @@
     user-select: none;
     overflow: hidden;
   }
-
-  /* normal warning states */
-  .drink-card.warn-yellow {
-    border-color: var(--warn-yellow);
-    animation: pulseYellow 1.4s ease-in-out infinite;
-  }
-  .drink-card.warn-red {
-    border-color: var(--warn-red);
-    animation: pulseRed 0.9s ease-in-out infinite;
-  }
+  .drink-card.warn-yellow { border-color: var(--warn-yellow); animation: pulseYellow 1.4s ease-in-out infinite; }
+  .drink-card.warn-red    { border-color: var(--warn-red);    animation: pulseRed 0.9s ease-in-out infinite; }
   @keyframes pulseYellow {
     0%,100% { box-shadow: 0 0 0 0 rgba(243,156,18,0); background: var(--card); }
     50%      { box-shadow: 0 0 18px 6px rgba(243,156,18,0.45); background: #2a2200; }
@@ -183,8 +204,6 @@
     0%,100% { box-shadow: 0 0 0 0 rgba(231,76,60,0); background: var(--card); }
     50%      { box-shadow: 0 0 22px 8px rgba(231,76,60,0.55); background: #2d0a09; }
   }
-
-  /* ── CARD EDIT STATE ── */
   body.edit-mode .drink-card {
     border-color: rgba(162,155,254,0.4) !important;
     animation: none !important;
@@ -192,15 +211,10 @@
     box-shadow: none !important;
     min-height: 190px;
   }
-
-  /* normal elements – hide in edit mode */
   body.edit-mode .card-normal { display: none !important; }
-
-  /* edit elements – hidden normally */
   .card-edit { display: none; }
   body.edit-mode .card-edit { display: flex; }
 
-  /* ── CARD NORMAL ELEMENTS ── */
   .drink-icon { font-size: 2.2rem; line-height: 1; }
   .drink-name { font-size: 0.92rem; font-weight: 700; text-align: center; letter-spacing: 0.02em; }
 
@@ -246,14 +260,8 @@
   }
   .btn-done:active { background: rgba(46,204,113,0.35); }
 
-  .timers-area {
-    display: flex; flex-wrap: wrap; gap: 4px;
-    justify-content: center; min-height: 18px;
-  }
-  .timer-dot {
-    width: 10px; height: 10px; border-radius: 50%;
-    background: var(--green); transition: background 0.3s;
-  }
+  .timers-area { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; min-height: 18px; }
+  .timer-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); }
   .timer-dot.yellow { background: var(--warn-yellow); }
   .timer-dot.red    { background: var(--warn-red); }
 
@@ -264,25 +272,10 @@
   }
   .bump { animation: bump 0.25s ease-out; }
 
-  /* ── CARD EDIT LAYOUT ── */
-  .card-edit {
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-  }
-
-  /* top row: move + icon + delete */
-  .edit-top-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    gap: 6px;
-  }
-  .move-btns {
-    display: flex; flex-direction: column; gap: 4px;
-  }
+  /* card edit layout */
+  .card-edit { flex-direction: column; align-items: center; gap: 8px; width: 100%; }
+  .edit-top-row { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 6px; }
+  .move-btns { display: flex; flex-direction: column; gap: 4px; }
   .btn-move {
     background: rgba(255,255,255,0.06);
     border: 1px solid #3a4a6c;
@@ -292,7 +285,6 @@
     font-size: 0.65rem;
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    transition: background 0.12s;
   }
   .btn-move:active { background: rgba(255,255,255,0.18); color: var(--text); }
   .btn-move:disabled { opacity: 0.22; pointer-events: none; }
@@ -306,16 +298,9 @@
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
-    transition: background 0.15s;
     position: relative;
   }
-  .icon-btn::after {
-    content: '✏️';
-    font-size: 0.6rem;
-    position: absolute;
-    bottom: 2px; right: 2px;
-    line-height: 1;
-  }
+  .icon-btn::after { content: '✏️'; font-size: 0.6rem; position: absolute; bottom: 2px; right: 2px; }
   .icon-btn:active { background: rgba(162,155,254,0.25); }
 
   .btn-delete {
@@ -327,12 +312,10 @@
     font-size: 1rem;
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s;
     flex-shrink: 0;
   }
   .btn-delete:active { background: rgba(231,76,60,0.3); }
 
-  /* name input */
   .name-input {
     width: 100%;
     background: rgba(255,255,255,0.06);
@@ -349,7 +332,193 @@
   }
   .name-input:focus { border-color: var(--edit-color); }
 
-  /* ── EMOJI MODAL ── */
+  /* ══ MANUAL PAGE ══ */
+  #pageManual {
+    background: var(--bg);
+  }
+  .manual-header {
+    background: var(--surface);
+    padding: 14px 16px 10px;
+    border-bottom: 2px solid var(--manual-color);
+    flex-shrink: 0;
+  }
+  .manual-header-title {
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: var(--manual-color);
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+  }
+
+  /* search box */
+  .search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.06);
+    border: 1.5px solid rgba(0,206,201,0.4);
+    border-radius: 12px;
+    padding: 8px 14px;
+  }
+  .search-wrap input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .search-wrap input::placeholder { color: var(--muted); font-weight: 400; }
+  .search-icon { font-size: 1.1rem; color: var(--muted); }
+  .btn-clear-search {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0;
+    display: none;
+  }
+  .btn-clear-search.visible { display: block; }
+
+  /* category tabs */
+  .cat-tabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 10px 16px 0;
+    flex-shrink: 0;
+    scrollbar-width: none;
+  }
+  .cat-tabs::-webkit-scrollbar { display: none; }
+  .cat-tab {
+    background: rgba(255,255,255,0.06);
+    border: 1.5px solid #2a3a5c;
+    color: var(--muted);
+    border-radius: 99px;
+    padding: 5px 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .cat-tab.active {
+    background: rgba(0,206,201,0.15);
+    border-color: var(--manual-color);
+    color: var(--manual-color);
+  }
+
+  /* manual list */
+  #manualList {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .manual-card {
+    background: var(--surface);
+    border-radius: 14px;
+    border: 1.5px solid #2a3a5c;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .manual-card.highlight { border-color: var(--manual-color); }
+
+  .manual-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 16px;
+    cursor: pointer;
+    gap: 10px;
+  }
+  .manual-card-head:active { background: rgba(255,255,255,0.04); }
+
+  .manual-title-row { display: flex; align-items: center; gap: 10px; }
+  .manual-emoji { font-size: 1.4rem; line-height: 1; flex-shrink: 0; }
+  .manual-name {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .manual-cat-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 99px;
+    background: rgba(255,255,255,0.08);
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .manual-arrow {
+    color: var(--muted);
+    font-size: 0.75rem;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+  .manual-card.open .manual-arrow { transform: rotate(90deg); }
+
+  .manual-body {
+    display: none;
+    padding: 0 16px 14px;
+    border-top: 1px solid #2a3a5c;
+  }
+  .manual-card.open .manual-body { display: block; }
+
+  .manual-steps {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 12px;
+  }
+  .manual-steps li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+  .step-num {
+    background: var(--manual-color);
+    color: #0a2020;
+    border-radius: 50%;
+    width: 22px; height: 22px;
+    font-size: 0.72rem;
+    font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-num.dot {
+    background: rgba(0,206,201,0.2);
+    color: var(--manual-color);
+  }
+
+  /* highlight matched text */
+  mark {
+    background: rgba(245,166,35,0.35);
+    color: var(--amber);
+    border-radius: 3px;
+    padding: 0 2px;
+  }
+
+  .no-result {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+    padding: 40px 20px;
+  }
+
+  /* ══ EMOJI MODAL ══ */
   #emojiModal {
     display: none;
     position: fixed;
@@ -371,20 +540,8 @@
     gap: 12px;
     border-top: 2px solid var(--edit-color);
   }
-  .emoji-panel-title {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: var(--muted);
-    text-align: center;
-    letter-spacing: 0.06em;
-  }
-  .emoji-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 8px;
-    overflow-y: auto;
-    flex: 1;
-  }
+  .emoji-panel-title { font-size: 0.9rem; font-weight: 700; color: var(--muted); text-align: center; }
+  .emoji-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; overflow-y: auto; flex: 1; }
   .emoji-choice {
     font-size: 1.7rem;
     text-align: center;
@@ -393,7 +550,6 @@
     cursor: pointer;
     background: rgba(255,255,255,0.04);
     border: 1.5px solid transparent;
-    transition: background 0.12s;
     line-height: 1.3;
   }
   .emoji-choice:active { background: rgba(255,255,255,0.18); border-color: var(--edit-color); }
@@ -410,19 +566,10 @@
     width: 100%;
   }
 
-  /* ── FOOTER ── */
-  footer {
-    text-align: center;
-    font-size: 0.65rem;
-    color: var(--muted);
-    padding: 6px;
-    flex-shrink: 0;
-  }
-
   /* ── TOAST ── */
   #toast {
     position: fixed;
-    bottom: 24px;
+    bottom: 70px;
     left: 50%;
     transform: translateX(-50%) translateY(20px);
     background: #2ecc71;
@@ -442,21 +589,44 @@
 </head>
 <body>
 
-<header>
-  <div class="logo">IS<span>SO</span></div>
-  <div class="header-right">
-    <div class="total-badge">
-      未提供&nbsp;<span class="num" id="totalCount">0</span>
+<!-- ══ DRINK PAGE ══ -->
+<div id="pageDrink" class="page active">
+  <header>
+    <div class="logo">IS<span>SO</span></div>
+    <div class="header-right">
+      <div class="total-badge">未提供&nbsp;<span class="num" id="totalCount">0</span></div>
+      <button class="btn-add-card" id="btnAddCard">＋ 追加</button>
+      <button class="btn-edit-toggle" id="btnEditToggle">✏️ 編集</button>
     </div>
-    <button class="btn-add-card" id="btnAddCard">＋ 追加</button>
-    <button class="btn-edit-toggle" id="btnEditToggle">✏️ 編集</button>
-  </div>
-</header>
+  </header>
+  <div id="editBar">✏️ 編集モード ― アイコン・名前・並び順を変更できます</div>
+  <div id="adviceBar" class="advice-idle">☕ 今のうちにジョッキを洗ってください</div>
+  <div id="drinkGrid"></div>
+</div>
 
-<div id="editBar">✏️ 編集モード ― アイコン・名前・並び順を変更できます</div>
-<div id="adviceBar" class="advice-idle">☕ 今のうちにジョッキを洗ってください</div>
-<div id="drinkGrid"></div>
-<footer>ISSO v1.2 – ドリンク出し忘れ防止システム</footer>
+<!-- ══ MANUAL PAGE ══ -->
+<div id="pageManual" class="page">
+  <div class="manual-header">
+    <div class="manual-header-title">📋 マニュアル</div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="料理名・手順を検索…">
+      <button class="btn-clear-search" id="btnClearSearch">✕</button>
+    </div>
+  </div>
+  <div class="cat-tabs" id="catTabs"></div>
+  <div id="manualList"></div>
+</div>
+
+<!-- ══ TAB BAR ══ -->
+<div id="tabBar">
+  <button class="tab-btn active" id="tabDrink" onclick="switchTab('drink')">
+    <span class="tab-icon">🍺</span>ドリンク
+  </button>
+  <button class="tab-btn manual-tab" id="tabManual" onclick="switchTab('manual')">
+    <span class="tab-icon">📋</span>マニュアル
+  </button>
+</div>
 
 <!-- EMOJI MODAL -->
 <div id="emojiModal">
@@ -470,7 +640,232 @@
 <div id="toast"></div>
 
 <script>
-/* ══ CONSTANTS ══ */
+/* ══════════════════════════════════════
+   MANUAL DATA
+══════════════════════════════════════ */
+const MANUAL_DATA = [
+  {
+    id: 'yamaimo', name: '山芋鉄板', emoji: '🥘', category: '料理',
+    steps: [
+      '山芋1人分180g、卵は1人分で半個を用意',
+      '鉄板にバターを塗る',
+      '山芋を入れて、チーズを入れる',
+      'アルミホイルを貼って、串で止める',
+      '火を強めて5分にセット',
+      '提供時：かつお節・青のり・ソース（赤）・マヨネーズを出す',
+      '取り皿を人数分用意する',
+      '牛すじは柚子胡椒を添える',
+    ]
+  },
+  {
+    id: 'ochazuke', name: 'お茶漬け', emoji: '🍵', category: '料理',
+    steps: [
+      '左上の皿を使う',
+      '漬物を用意（1人につき2個）',
+      'お茶っ葉を女将さんに持っていく',
+    ]
+  },
+  {
+    id: 'order', name: 'オーダー打ち', emoji: '📱', category: '接客',
+    steps: [
+      'テーブル → 人数 → 登録 の順に進む',
+      '注文を打つ（飲み物は後回しにする）',
+      '送信する',
+      '全部打ち終わったら送信後に仮伝票を出す',
+      'オーダー書いたものにチェックを入れる',
+      '二重確認を必ず行う',
+    ]
+  },
+  {
+    id: 'sashimi', name: '刺し盛り', emoji: '🐟', category: '料理',
+    steps: [
+      'くろまるに笹を真ん中に置く',
+      '笹の上に大根と大葉を乗せる',
+      '横に大根・海藻・大葉を置く',
+    ]
+  },
+  {
+    id: 'takokara', name: 'たこから・ずりから', emoji: '🍗', category: '料理',
+    steps: [
+      '右のお皿を使う',
+      '天紙を折る（動画参照）',
+      '一味を端に置く',
+      '※鶏からとイカ天は別の皿',
+    ]
+  },
+  {
+    id: 'tamagoyaki', name: '卵焼き', emoji: '🍳', category: '料理',
+    steps: [
+      '皿は鉄板焼くところの下にある',
+      '明太卵焼きは真ん中にある黒の少し大きい平皿',
+      '卵焼きのマヨネーズは皿の右に置く',
+    ]
+  },
+  {
+    id: 'hotaru', name: 'ホタルイカ塩辛', emoji: '🦑', category: '料理',
+    steps: [
+      '右下奥の皿と大将下の冷蔵庫を使う',
+      '8個入れる',
+    ]
+  },
+  {
+    id: 'potato', name: 'ポテトサラダ', emoji: '🥗', category: '料理',
+    steps: [
+      '枝豆の殻入れと同じ皿を使う',
+      'サニーレタスとスプーンを添える',
+    ]
+  },
+  {
+    id: 'yasaため', name: '野菜炒め', emoji: '🥬', category: '料理',
+    steps: [
+      '鶏からと一緒の皿を使う',
+      'ウスターソース・取り皿・トングを添える',
+    ]
+  },
+  {
+    id: 'shishamo', name: 'ししゃも', emoji: '🐠', category: '料理',
+    steps: [
+      '網焼き下の細長い皿を使う',
+      'レモンを添える',
+    ]
+  },
+  {
+    id: 'morokyu', name: 'もろきゅう', emoji: '🥒', category: '料理',
+    steps: [
+      '焼台の下の平べったい曲がった皿を使う',
+    ]
+  },
+  {
+    id: 'zosui', name: 'ぞうすい', emoji: '🍲', category: '料理',
+    steps: [
+      '真ん中1番上の皿を使う',
+      'かぶ取り皿（チャーハンと一緒）を用意',
+      'たくあんを添える',
+      '最後にのりをのせる',
+    ]
+  },
+  {
+    id: 'basashi', name: '馬刺し・鯨刺し', emoji: '🐴', category: '料理',
+    steps: [
+      '真ん中上の一番左の茶色皿を使う',
+      '馬刺し：しょうがを入れる',
+      '鯨刺し：大根・海藻・大葉を置く',
+      '最後にネギをのせる',
+    ]
+  },
+  {
+    id: 'yudofu', name: '湯豆腐', emoji: '🫕', category: '料理',
+    steps: [
+      '取り皿に赤おろしとポン酢を出す',
+    ]
+  },
+  {
+    id: 'onigiri', name: 'おにぎり', emoji: '🍙', category: '料理',
+    steps: [
+      '焼き海苔Cを1枚の半分をハサミで切る（三角に）',
+      'たくあん2枚を添える',
+      'ザラザラの面を上に置く',
+      '皿は渦巻き取り皿を使う',
+    ]
+  },
+  {
+    id: 'jidori', name: '地鶏鉄板', emoji: '🍳', category: '料理',
+    steps: [
+      'ポン酢をかける',
+      '柚子胡椒を添える',
+    ]
+  },
+  {
+    id: 'aji', name: 'アジ活け造り', emoji: '🐟', category: '料理',
+    steps: [
+      '左下真ん中の皿の真ん中に大根をセットする',
+    ]
+  },
+  {
+    id: 'kimuchi', name: 'キムチ奴', emoji: '🧊', category: '料理',
+    steps: [
+      'あら煮の骨入れと同じ皿を使う',
+    ]
+  },
+  {
+    id: 'burikama', name: 'ブリカマ', emoji: '🐡', category: '料理',
+    steps: [
+      '鶏からと一緒の皿を使う',
+      'おろし・ポン酢・ネギ・レモンの順で盛る',
+    ]
+  },
+  {
+    id: 'tebasaki', name: '手羽明太', emoji: '🍗', category: '料理',
+    steps: [
+      '漬盛と一緒の皿を使う',
+      'レモンをのせる',
+    ]
+  },
+  {
+    id: 'korokke', name: 'コロッケ', emoji: '🍘', category: '料理',
+    steps: [
+      'あらの殻入れ・揚げ出し豆腐と一緒の皿を使う',
+      '下にレタスを入れてコロッケを置く',
+      '最後に天つゆをかける',
+      '※1個185円',
+    ]
+  },
+  {
+    id: 'sushi', name: '寿司', emoji: '🍣', category: '料理',
+    steps: [
+      '1皿：右上真ん中の皿を使う',
+      '2皿以上：右上のひねった皿を使う',
+      '更に多い場合：一番大きい寿司皿を使う',
+    ]
+  },
+  {
+    id: 'hiyayakko', name: '冷奴', emoji: '🫙', category: '料理',
+    steps: [
+      '左上青手前の青い皿を使う',
+      'ネギ・かつお節・しょうがを添える',
+    ]
+  },
+  {
+    id: 'nabeSet', name: '鍋セット', emoji: '🍲', category: '料理',
+    steps: [
+      '穴あきおたまとおたまを用意する',
+    ]
+  },
+  {
+    id: 'fujii', name: '不二才ソーダ割り', emoji: '🥃', category: 'ドリンク',
+    steps: [
+      'チューハイグラスの3〜4割を焼酎にする',
+    ]
+  },
+  {
+    id: 'oyuwari', name: '焼酎お湯割り', emoji: '♨️', category: 'ドリンク',
+    steps: [
+      'お湯から先に入れる',
+      '焼酎：お湯 = 5：5',
+    ]
+  },
+  {
+    id: 'mizuwari', name: '焼酎水割り', emoji: '💧', category: 'ドリンク',
+    steps: [
+      '焼酎から先に入れる',
+      '焼酎：水 = 6：4',
+    ]
+  },
+  {
+    id: 'sodawari', name: '焼酎ソーダ割り', emoji: '🫧', category: 'ドリンク',
+    steps: [
+      '焼酎から先に入れる',
+      '25度：焼酎：炭酸 = 1：3',
+      '42度：焼酎：炭酸 = 1：4',
+    ]
+  },
+];
+
+const CATEGORIES = ['すべて', ...Array.from(new Set(MANUAL_DATA.map(m => m.category)))];
+
+/* ══════════════════════════════════════
+   DRINK CONSTANTS
+══════════════════════════════════════ */
 const DEFAULT_DRINKS = [
   { id: 'beer',     name: '生ビール',     icon: '🍺' },
   { id: 'highball', name: 'ハイボール',   icon: '🥃' },
@@ -484,45 +879,47 @@ const EMOJI_LIST = [
   '🧃','🥤','🫖','☕','🍵','🧋','🧊','🍋',
   '🍊','🍇','🍓','🫐','🍑','🍒','🍎','🍐',
   '🌿','🍃','🌸','⭐','💫','🎯','🔥','❄️',
-  '🟡','🟠','🔴','🟣','🔵','🟢','⚪','⚫',
 ];
 const WARN_YELLOW_MS = 3 * 60 * 1000;
 const WARN_RED_MS    = 5 * 60 * 1000;
 
-/* ══ STATE ══ */
+/* ══ DRINK STATE ══ */
 let drinks  = [];
-let runtime = {}; // id -> {count, orders:[{orderedAt}]}
+let runtime = {};
 let editMode = false;
 
-/* ══ PERSISTENCE ══ */
 function saveDrinks() {
   try { localStorage.setItem('isso_drinks_v1', JSON.stringify(drinks)); } catch(e) {}
 }
 function loadDrinks() {
-  try {
-    const s = localStorage.getItem('isso_drinks_v1');
-    if (s) { drinks = JSON.parse(s); return; }
-  } catch(e) {}
+  try { const s = localStorage.getItem('isso_drinks_v1'); if (s) { drinks = JSON.parse(s); return; } } catch(e) {}
   drinks = DEFAULT_DRINKS.map(d => ({ ...d }));
 }
-function makeId() {
-  return 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
-}
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-}
+function makeId() { return 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
-/* ══ RUNTIME SYNC ══ */
 function syncRuntime() {
   const next = {};
   drinks.forEach(d => { next[d.id] = runtime[d.id] || { count: 0, orders: [] }; });
   runtime = next;
 }
 
-/* ══ EDIT MODE TOGGLE ══ */
+/* ══ TAB SWITCHING ══ */
+function switchTab(tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (tab === 'drink') {
+    document.getElementById('pageDrink').classList.add('active');
+    document.getElementById('tabDrink').classList.add('active');
+  } else {
+    document.getElementById('pageManual').classList.add('active');
+    document.getElementById('tabManual').classList.add('active');
+  }
+}
+
+/* ══ EDIT MODE ══ */
 document.getElementById('btnEditToggle').addEventListener('click', () => {
   if (editMode) {
-    // Save: collect name inputs
     collectNameEdits();
     saveDrinks();
     editMode = false;
@@ -545,9 +942,7 @@ document.getElementById('btnAddCard').addEventListener('click', () => {
   drinks.push({ id: makeId(), name: '新しいドリンク', icon: '🍹' });
   syncRuntime();
   rebuildGrid();
-  // scroll to bottom
-  const grid = document.getElementById('drinkGrid');
-  setTimeout(() => grid.scrollTo({ top: grid.scrollHeight, behavior: 'smooth' }), 50);
+  setTimeout(() => document.getElementById('drinkGrid').scrollTo({ top: 99999, behavior: 'smooth' }), 50);
 });
 
 function collectNameEdits() {
@@ -557,7 +952,7 @@ function collectNameEdits() {
   });
 }
 
-/* ══ GRID BUILD ══ */
+/* ══ DRINK GRID ══ */
 function rebuildGrid() {
   syncRuntime();
   const grid = document.getElementById('drinkGrid');
@@ -567,15 +962,12 @@ function rebuildGrid() {
     card.className = 'drink-card';
     card.id = 'card-' + drink.id;
     card.innerHTML = `
-      <!-- NORMAL VIEW -->
       <div class="drink-icon card-normal">${drink.icon}</div>
       <div class="drink-name card-normal">${esc(drink.name)}</div>
       <div class="count-display zero card-normal" id="count-${drink.id}">0</div>
       <div class="timers-area card-normal" id="timers-${drink.id}"></div>
       <button class="btn-order card-normal" data-id="${drink.id}">＋ 注文</button>
       <button class="btn-done  card-normal" data-id="${drink.id}">✓ 提供完了</button>
-
-      <!-- EDIT VIEW -->
       <div class="card-edit" style="flex-direction:column;align-items:center;gap:8px;width:100%;">
         <div class="edit-top-row">
           <div class="move-btns">
@@ -593,170 +985,185 @@ function rebuildGrid() {
   });
 }
 
-/* ══ GRID EVENTS ══ */
 document.getElementById('drinkGrid').addEventListener('click', e => {
   if (editMode) {
-    // Move up
     const up = e.target.closest('.btn-up');
-    if (up) {
-      collectNameEdits();
-      const i = drinks.findIndex(d => d.id === up.dataset.id);
-      if (i > 0) { [drinks[i-1], drinks[i]] = [drinks[i], drinks[i-1]]; }
-      rebuildGrid(); return;
-    }
-    // Move down
+    if (up) { collectNameEdits(); const i = drinks.findIndex(d=>d.id===up.dataset.id); if(i>0){[drinks[i-1],drinks[i]]=[drinks[i],drinks[i-1]];} rebuildGrid(); return; }
     const dn = e.target.closest('.btn-dn');
-    if (dn) {
-      collectNameEdits();
-      const i = drinks.findIndex(d => d.id === dn.dataset.id);
-      if (i < drinks.length-1) { [drinks[i], drinks[i+1]] = [drinks[i+1], drinks[i]]; }
-      rebuildGrid(); return;
-    }
-    // Delete
+    if (dn) { collectNameEdits(); const i = drinks.findIndex(d=>d.id===dn.dataset.id); if(i<drinks.length-1){[drinks[i],drinks[i+1]]=[drinks[i+1],drinks[i]];} rebuildGrid(); return; }
     const del = e.target.closest('.btn-delete');
-    if (del) {
-      if (drinks.length <= 1) { showToast('最低1つは必要です'); return; }
-      collectNameEdits();
-      drinks = drinks.filter(d => d.id !== del.dataset.id);
-      rebuildGrid(); return;
-    }
-    // Icon
+    if (del) { if(drinks.length<=1){showToast('最低1つは必要です');return;} collectNameEdits(); drinks=drinks.filter(d=>d.id!==del.dataset.id); rebuildGrid(); return; }
     const icon = e.target.closest('.icon-btn');
     if (icon) { openEmojiPicker(icon.dataset.id); return; }
   } else {
-    // Normal mode
-    const ob = e.target.closest('.btn-order');
-    if (ob) { addOrder(ob.dataset.id); return; }
-    const db = e.target.closest('.btn-done');
-    if (db) { markDone(db.dataset.id); return; }
+    const ob = e.target.closest('.btn-order'); if (ob) { addOrder(ob.dataset.id); return; }
+    const db = e.target.closest('.btn-done');  if (db) { markDone(db.dataset.id);  return; }
   }
 });
 
-/* ══ ORDER LOGIC ══ */
 function addOrder(id) {
   const s = runtime[id]; if (!s) return;
-  s.count++;
-  s.orders.push({ orderedAt: Date.now() });
+  s.count++; s.orders.push({ orderedAt: Date.now() });
   renderCard(id); renderTotal(); updateAdvice();
 }
 function markDone(id) {
-  const s = runtime[id]; if (!s || s.count <= 0) return;
+  const s = runtime[id]; if (!s || s.count<=0) return;
   s.count--; s.orders.shift();
   renderCard(id); renderTotal(); updateAdvice();
 }
-
 function renderCard(id) {
-  const s     = runtime[id];
-  const el    = document.getElementById('count-' + id);
-  const card  = document.getElementById('card-' + id);
-  const tArea = document.getElementById('timers-' + id);
-  if (!s || !el || !card || !tArea) return;
-
-  el.textContent = s.count;
-  el.className = 'count-display card-normal ' + (s.count === 0 ? 'zero' : 'has-count');
-  el.classList.remove('bump');
-  void el.offsetWidth;
-  if (s.count > 0) el.classList.add('bump');
-
-  const now = Date.now();
-  tArea.innerHTML = '';
-  s.orders.forEach(o => {
-    const elapsed = now - o.orderedAt;
-    const dot = document.createElement('div');
-    dot.className = 'timer-dot' + (elapsed >= WARN_RED_MS ? ' red' : elapsed >= WARN_YELLOW_MS ? ' yellow' : '');
-    tArea.appendChild(dot);
-  });
-
-  const maxElapsed = s.orders.reduce((m, o) => Math.max(m, now - o.orderedAt), 0);
-  card.classList.remove('warn-yellow', 'warn-red');
-  if (!editMode && s.count > 0) {
-    if (maxElapsed >= WARN_RED_MS)         card.classList.add('warn-red');
-    else if (maxElapsed >= WARN_YELLOW_MS) card.classList.add('warn-yellow');
-  }
+  const s=runtime[id], el=document.getElementById('count-'+id), card=document.getElementById('card-'+id), tArea=document.getElementById('timers-'+id);
+  if (!s||!el||!card||!tArea) return;
+  el.textContent=s.count;
+  el.className='count-display card-normal '+(s.count===0?'zero':'has-count');
+  el.classList.remove('bump'); void el.offsetWidth; if(s.count>0) el.classList.add('bump');
+  const now=Date.now(); tArea.innerHTML='';
+  s.orders.forEach(o=>{ const d=document.createElement('div'); d.className='timer-dot'+(now-o.orderedAt>=WARN_RED_MS?' red':now-o.orderedAt>=WARN_YELLOW_MS?' yellow':''); tArea.appendChild(d); });
+  const mx=s.orders.reduce((m,o)=>Math.max(m,now-o.orderedAt),0);
+  card.classList.remove('warn-yellow','warn-red');
+  if(!editMode&&s.count>0){ if(mx>=WARN_RED_MS) card.classList.add('warn-red'); else if(mx>=WARN_YELLOW_MS) card.classList.add('warn-yellow'); }
 }
-
 function renderTotal() {
-  const total = drinks.reduce((sum, d) => sum + (runtime[d.id]?.count || 0), 0);
-  document.getElementById('totalCount').textContent = total;
+  document.getElementById('totalCount').textContent = drinks.reduce((s,d)=>s+(runtime[d.id]?.count||0),0);
 }
-
 function updateAdvice() {
-  const bar   = document.getElementById('adviceBar');
-  const total = drinks.reduce((sum, d) => sum + (runtime[d.id]?.count || 0), 0);
-  const now   = Date.now();
-  const hasRed = drinks.some(d => (runtime[d.id]?.orders||[]).some(o => now - o.orderedAt >= WARN_RED_MS));
-  bar.className = '';
-  if (total === 0) {
-    bar.className = 'advice-idle';
-    bar.textContent = '☕ 今のうちにジョッキを洗ってください';
-  } else if (total >= 3 || hasRed) {
-    bar.className = 'advice-busy';
-    bar.textContent = '🚨 ドリンク作成を最優先してください！';
-  } else {
-    bar.className = 'advice-warning';
-    bar.textContent = '⚡ ドリンクの注文が入っています！早めに対応しましょう';
-  }
+  const bar=document.getElementById('adviceBar');
+  const total=drinks.reduce((s,d)=>s+(runtime[d.id]?.count||0),0);
+  const now=Date.now();
+  const hasRed=drinks.some(d=>(runtime[d.id]?.orders||[]).some(o=>now-o.orderedAt>=WARN_RED_MS));
+  bar.className='';
+  if(total===0){ bar.className='advice-idle'; bar.textContent='☕ 今のうちにジョッキを洗ってください'; }
+  else if(total>=3||hasRed){ bar.className='advice-busy'; bar.textContent='🚨 ドリンク作成を最優先してください！'; }
+  else{ bar.className='advice-warning'; bar.textContent='⚡ ドリンクの注文が入っています！早めに対応しましょう'; }
 }
 
 /* ══ EMOJI PICKER ══ */
 let emojiTargetId = null;
 function openEmojiPicker(id) {
   emojiTargetId = id;
-  const grid = document.getElementById('emojiGrid');
-  grid.innerHTML = '';
-  EMOJI_LIST.forEach(emoji => {
-    const btn = document.createElement('div');
-    btn.className = 'emoji-choice';
-    btn.textContent = emoji;
-    btn.addEventListener('click', () => pickEmoji(emoji));
-    grid.appendChild(btn);
-  });
+  const grid = document.getElementById('emojiGrid'); grid.innerHTML='';
+  EMOJI_LIST.forEach(emoji => { const btn=document.createElement('div'); btn.className='emoji-choice'; btn.textContent=emoji; btn.addEventListener('click',()=>pickEmoji(emoji)); grid.appendChild(btn); });
   document.getElementById('emojiModal').classList.add('open');
 }
 function pickEmoji(emoji) {
-  const d = drinks.find(x => x.id === emojiTargetId);
-  if (d) {
-    d.icon = emoji;
-    const btn = document.querySelector(`.icon-btn[data-id="${emojiTargetId}"]`);
-    if (btn) btn.childNodes[0].textContent = emoji; // update just text node
-    // rebuild to sync (lightweight)
-    rebuildGrid();
-  }
-  closeEmoji();
+  const d=drinks.find(x=>x.id===emojiTargetId); if(d){d.icon=emoji;} closeEmoji(); rebuildGrid();
 }
-function closeEmoji() {
-  document.getElementById('emojiModal').classList.remove('open');
-  emojiTargetId = null;
-}
+function closeEmoji() { document.getElementById('emojiModal').classList.remove('open'); emojiTargetId=null; }
 document.getElementById('btnCloseEmoji').addEventListener('click', closeEmoji);
-document.getElementById('emojiModal').addEventListener('click', e => {
-  if (e.target === document.getElementById('emojiModal')) closeEmoji();
-});
+document.getElementById('emojiModal').addEventListener('click', e=>{ if(e.target===document.getElementById('emojiModal')) closeEmoji(); });
+
+/* ══════════════════════════════════════
+   MANUAL PAGE
+══════════════════════════════════════ */
+let currentCat = 'すべて';
+let searchQuery = '';
+
+function initManual() {
+  // category tabs
+  const tabsEl = document.getElementById('catTabs');
+  CATEGORIES.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-tab' + (cat === 'すべて' ? ' active' : '');
+    btn.textContent = cat;
+    btn.addEventListener('click', () => {
+      currentCat = cat;
+      document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderManualList();
+    });
+    tabsEl.appendChild(btn);
+  });
+
+  // search
+  const searchInput = document.getElementById('searchInput');
+  const clearBtn    = document.getElementById('btnClearSearch');
+  searchInput.addEventListener('input', () => {
+    searchQuery = searchInput.value.trim();
+    clearBtn.classList.toggle('visible', searchQuery.length > 0);
+    renderManualList();
+  });
+  clearBtn.addEventListener('click', () => {
+    searchInput.value = ''; searchQuery = '';
+    clearBtn.classList.remove('visible');
+    renderManualList();
+  });
+
+  renderManualList();
+}
+
+function renderManualList() {
+  const list = document.getElementById('manualList');
+  const q = searchQuery.toLowerCase();
+
+  let filtered = MANUAL_DATA.filter(m => {
+    const catOk = currentCat === 'すべて' || m.category === currentCat;
+    if (!catOk) return false;
+    if (!q) return true;
+    return m.name.toLowerCase().includes(q) || m.steps.some(s => s.toLowerCase().includes(q));
+  });
+
+  list.innerHTML = '';
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="no-result">😕 見つかりませんでした</div>';
+    return;
+  }
+
+  filtered.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'manual-card' + (q ? ' highlight' : '');
+    card.innerHTML = `
+      <div class="manual-card-head">
+        <div class="manual-title-row">
+          <span class="manual-emoji">${item.emoji}</span>
+          <span class="manual-name">${highlight(item.name, q)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="manual-cat-badge">${item.category}</span>
+          <span class="manual-arrow">▶</span>
+        </div>
+      </div>
+      <div class="manual-body">
+        <ul class="manual-steps">
+          ${item.steps.map((step, i) => `
+            <li>
+              <span class="step-num">${i+1}</span>
+              <span>${highlight(step, q)}</span>
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+    `;
+    // auto-open if search matches
+    if (q) card.classList.add('open');
+
+    card.querySelector('.manual-card-head').addEventListener('click', () => {
+      card.classList.toggle('open');
+    });
+    list.appendChild(card);
+  });
+}
+
+function highlight(text, q) {
+  if (!q) return esc(text);
+  const escaped = esc(text);
+  const escapedQ = esc(q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return escaped.replace(new RegExp(escapedQ, 'gi'), m => `<mark>${m}</mark>`);
+}
 
 /* ══ TOAST ══ */
 let toastT;
 function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(toastT);
-  toastT = setTimeout(() => t.classList.remove('show'), 2200);
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200);
 }
 
 /* ══ TICK ══ */
-setInterval(() => {
-  if (!editMode) {
-    drinks.forEach(d => renderCard(d.id));
-    updateAdvice();
-  }
-}, 10000);
+setInterval(() => { if(!editMode){ drinks.forEach(d=>renderCard(d.id)); updateAdvice(); } }, 10000);
 
 /* ══ INIT ══ */
-loadDrinks();
-syncRuntime();
-rebuildGrid();
-renderTotal();
-updateAdvice();
+loadDrinks(); syncRuntime(); rebuildGrid(); renderTotal(); updateAdvice();
+initManual();
 </script>
 </body>
 </html>
