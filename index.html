@@ -406,6 +406,126 @@ body {
 mark { background: #fff3cc; color: var(--kin); border-radius:2px; padding:0 2px; }
 .no-result { text-align:center; color:var(--sumi-light); font-size:0.9rem; padding:40px 20px; font-family:'Shippori Mincho',serif; }
 
+/* ══════════════════════════════
+   DRINK EDIT PAGE
+══════════════════════════════ */
+#pageEdit { background: var(--washi); }
+
+.edit-page-header {
+  background: var(--sumi); padding: 14px 16px 12px; flex-shrink: 0;
+  position: relative;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+.edit-page-header::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--kin), var(--kin-light), var(--kin));
+}
+.edit-page-title {
+  font-size: 1rem; font-weight: 800; color: var(--kin-light);
+  letter-spacing: 0.14em; font-family: 'Shippori Mincho', serif;
+  flex: 1;
+}
+.btn-add-drink {
+  background: rgba(184,144,42,0.2); border: 1px solid var(--kin-light); color: var(--kin-light);
+  border-radius: 3px; padding: 7px 14px;
+  font-family: 'Shippori Mincho', serif; font-size: 0.8rem; font-weight: 700;
+  cursor: pointer; white-space: nowrap; letter-spacing: 0.06em;
+}
+.btn-add-drink:active { background: rgba(184,144,42,0.4); }
+
+#editDrinkList {
+  flex: 1; overflow-y: auto; padding: 12px 14px 16px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+.edit-drink-row {
+  background: #fff;
+  border-radius: 3px; padding: 12px 14px;
+  display: flex; align-items: center; gap: 10px;
+  border-left: 4px solid var(--washi-mid);
+  border-top: 1px solid var(--washi-mid);
+  border-right: 1px solid var(--washi-mid);
+  border-bottom: 1px solid var(--washi-mid);
+  box-shadow: 0 1px 4px rgba(28,20,16,0.06);
+}
+.edit-drink-row:focus-within { border-left-color: var(--kin); }
+
+/* 並び替えボタン */
+.edit-move-btns { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
+.btn-move-ud {
+  background: var(--washi-dark); border: 1px solid var(--washi-mid); color: var(--sumi-light);
+  border-radius: 3px; width: 28px; height: 26px; font-size: 0.65rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-family: 'Shippori Mincho', serif;
+}
+.btn-move-ud:active { background: var(--washi-mid); color: var(--sumi); }
+.btn-move-ud:disabled { opacity: 0.25; pointer-events: none; }
+
+/* アイコンボタン */
+.edit-icon-btn {
+  font-size: 1.8rem; width: 50px; height: 50px; flex-shrink: 0;
+  background: var(--washi-dark); border: 1.5px dashed var(--kin);
+  border-radius: 3px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; position: relative;
+}
+.edit-icon-btn::after { content: '✏'; font-size: 0.55rem; position: absolute; bottom: 2px; right: 3px; color: var(--kin); }
+.edit-icon-btn:active { background: var(--washi-mid); }
+
+/* 名前入力 */
+.edit-name-input {
+  flex: 1; min-width: 0;
+  background: var(--washi-dark); border: 1px solid var(--washi-mid);
+  border-radius: 3px; color: var(--sumi);
+  font-family: 'Shippori Mincho', serif; font-size: 1rem; font-weight: 700;
+  padding: 9px 12px; outline: none; text-align: center;
+  letter-spacing: 0.06em;
+}
+.edit-name-input:focus { border-color: var(--kin); background: #fff; }
+
+/* 削除ボタン */
+.btn-delete-drink {
+  background: #fef0f0; border: 1px solid #e0a0a0; color: var(--beni);
+  border-radius: 3px; width: 36px; height: 36px; font-size: 1rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.btn-delete-drink:active { background: #fdd; }
+
+/* 絵文字ピッカー */
+#emojiPickerModal {
+  display: none; position: fixed; inset: 0; z-index: 300;
+  background: rgba(28,20,16,0.75); align-items: flex-end; justify-content: center;
+}
+#emojiPickerModal.open { display: flex; }
+.emoji-panel {
+  background: var(--washi); border-radius: 8px 8px 0 0;
+  padding: 16px; width: 100%; max-height: 55dvh;
+  display: flex; flex-direction: column; gap: 10px;
+  border-top: 3px solid var(--kin);
+}
+.emoji-panel-title {
+  font-size: 0.8rem; font-weight: 700; color: var(--sumi-light);
+  text-align: center; letter-spacing: 0.1em;
+  font-family: 'Shippori Mincho', serif;
+}
+.emoji-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 6px; overflow-y: auto; flex: 1;
+}
+.emoji-opt {
+  font-size: 1.7rem; text-align: center; padding: 5px 0;
+  border-radius: 3px; cursor: pointer;
+  background: #fff; border: 1px solid var(--washi-mid);
+  line-height: 1.3; transition: background 0.1s;
+}
+.emoji-opt:active { background: var(--washi-dark); border-color: var(--kin); }
+.btn-cancel-emoji {
+  background: var(--washi-dark); border: 1px solid var(--washi-mid); color: var(--sumi-light);
+  border-radius: 3px; padding: 10px; width: 100%;
+  font-family: 'Shippori Mincho', serif; font-size: 0.88rem; font-weight: 700;
+  cursor: pointer; letter-spacing: 0.06em;
+}
+
 /* ══ TOAST ══ */
 #toast {
   position:fixed; bottom:72px; left:50%;
@@ -468,10 +588,31 @@ mark { background: #fff3cc; color: var(--kin); border-radius:2px; padding:0 2px;
   <div id="manualList"></div>
 </div>
 
+<!-- ══ DRINK EDIT PAGE ══ -->
+<div id="pageEdit" class="page">
+  <div class="edit-page-header">
+    <div class="edit-page-title">⚙ ドリンク編集</div>
+    <button class="btn-add-drink" id="btnAddDrink">＋ 追加</button>
+  </div>
+  <div id="editDrinkList"></div>
+</div>
+
+<!-- ══ EMOJI PICKER ══ -->
+<div id="emojiPickerModal">
+  <div class="emoji-panel">
+    <div class="emoji-panel-title">アイコンを選んでください</div>
+    <div class="emoji-grid" id="emojiGrid"></div>
+    <button class="btn-cancel-emoji" id="btnCancelEmoji">キャンセル</button>
+  </div>
+</div>
+
 <!-- ══ TAB BAR ══ -->
 <div id="tabBar">
   <button class="tab-btn active" id="tabTop" onclick="switchTab('top')">
     <span class="tab-icon">🏠</span>テーブル
+  </button>
+  <button class="tab-btn" id="tabEdit" onclick="switchTab('edit')">
+    <span class="tab-icon">⚙</span>編集
   </button>
   <button class="tab-btn manual-tab" id="tabManual" onclick="switchTab('manual')">
     <span class="tab-icon">📋</span>マニュアル
@@ -526,12 +667,16 @@ function grandTotal(){return SEATS.reduce((s,seat)=>s+seatTotal(seat.id),0);}
 
 /* ══ TAB ══ */
 function switchTab(tab){
-  ['pageTop','pageManual','pageOrder'].forEach(id=>document.getElementById(id).classList.remove('active'));
-  ['tabTop','tabManual'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  ['pageTop','pageManual','pageOrder','pageEdit'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  ['tabTop','tabManual','tabEdit'].forEach(id=>document.getElementById(id).classList.remove('active'));
   if(tab==='top'){
     document.getElementById('pageTop').classList.add('active');
     document.getElementById('tabTop').classList.add('active');
     renderTopPage();
+  } else if(tab==='edit'){
+    document.getElementById('pageEdit').classList.add('active');
+    document.getElementById('tabEdit').classList.add('active');
+    renderEditPage();
   } else {
     document.getElementById('pageManual').classList.add('active');
     document.getElementById('tabManual').classList.add('active');
@@ -651,6 +796,129 @@ document.getElementById('orderList').addEventListener('click',e=>{
   saveOrders();renderOrderPage();
   const numEl=document.getElementById('dcnt-'+drinkId);
   if(numEl){numEl.classList.remove('bump');void numEl.offsetWidth;numEl.classList.add('bump');}
+});
+
+/* ══════════════════════════════════════
+   DRINK EDIT PAGE
+══════════════════════════════════════ */
+const EMOJI_LIST = [
+  '🍺','🍻','🥂','🍷','🥃','🍸','🍹','🍾',
+  '🧃','🥤','🫖','☕','🍵','🧋','🧊','🍋',
+  '🍊','🍇','🍓','🫐','🍑','🍒','🍎','🍐',
+  '🌿','🍃','🌸','⭐','💫','🔥','❄️','🎯',
+  '🟡','🟠','🔴','🟣','🔵','🟢','⚪','⚫',
+];
+
+let emojiTargetId = null;
+
+function makeId(){ return 'd'+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+
+function collectNameEdits(){
+  document.querySelectorAll('.edit-name-input').forEach(input=>{
+    const d=drinks.find(x=>x.id===input.dataset.id);
+    if(d&&input.value.trim()) d.name=input.value.trim();
+  });
+}
+
+function renderEditPage(){
+  const list=document.getElementById('editDrinkList'); list.innerHTML='';
+  drinks.forEach((drink,idx)=>{
+    const row=document.createElement('div');
+    row.className='edit-drink-row'; row.dataset.id=drink.id;
+    row.innerHTML=`
+      <div class="edit-move-btns">
+        <button class="btn-move-ud btn-up" data-id="${drink.id}" ${idx===0?'disabled':''}>▲</button>
+        <button class="btn-move-ud btn-dn" data-id="${drink.id}" ${idx===drinks.length-1?'disabled':''}>▼</button>
+      </div>
+      <button class="edit-icon-btn" data-id="${drink.id}">${drink.icon}</button>
+      <input class="edit-name-input" type="text" value="${esc(drink.name)}" data-id="${drink.id}" maxlength="10" placeholder="ドリンク名">
+      <button class="btn-delete-drink" data-id="${drink.id}">🗑</button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('btnAddDrink').addEventListener('click',()=>{
+  collectNameEdits();
+  drinks.push({id:makeId(), name:'新しいドリンク', icon:'🍹'});
+  saveDrinks();
+  // 注文ページのリストを再描画するため既存テーブルの注文は保持
+  renderEditPage();
+  setTimeout(()=>{
+    const l=document.getElementById('editDrinkList');
+    l.scrollTo({top:l.scrollHeight,behavior:'smooth'});
+    // 最後の入力欄にフォーカス
+    const inputs=l.querySelectorAll('.edit-name-input');
+    if(inputs.length) inputs[inputs.length-1].focus();
+  },60);
+});
+
+document.getElementById('editDrinkList').addEventListener('click',e=>{
+  // 上へ
+  const up=e.target.closest('.btn-up');
+  if(up){
+    collectNameEdits();
+    const i=drinks.findIndex(d=>d.id===up.dataset.id);
+    if(i>0)[drinks[i-1],drinks[i]]=[drinks[i],drinks[i-1]];
+    saveDrinks(); renderEditPage(); return;
+  }
+  // 下へ
+  const dn=e.target.closest('.btn-dn');
+  if(dn){
+    collectNameEdits();
+    const i=drinks.findIndex(d=>d.id===dn.dataset.id);
+    if(i<drinks.length-1)[drinks[i],drinks[i+1]]=[drinks[i+1],drinks[i]];
+    saveDrinks(); renderEditPage(); return;
+  }
+  // 削除
+  const del=e.target.closest('.btn-delete-drink');
+  if(del){
+    if(drinks.length<=1){showToast('最低1つは必要です');return;}
+    collectNameEdits();
+    drinks=drinks.filter(d=>d.id!==del.dataset.id);
+    saveDrinks(); renderEditPage(); return;
+  }
+  // アイコン変更
+  const icon=e.target.closest('.edit-icon-btn');
+  if(icon){ openEmojiPicker(icon.dataset.id); return; }
+});
+
+// 名前変更をリアルタイム保存
+document.getElementById('editDrinkList').addEventListener('change',e=>{
+  const input=e.target.closest('.edit-name-input');
+  if(input){
+    const d=drinks.find(x=>x.id===input.dataset.id);
+    if(d&&input.value.trim()){d.name=input.value.trim();saveDrinks();}
+  }
+});
+
+/* ── 絵文字ピッカー ── */
+function openEmojiPicker(id){
+  emojiTargetId=id;
+  const grid=document.getElementById('emojiGrid'); grid.innerHTML='';
+  EMOJI_LIST.forEach(emoji=>{
+    const btn=document.createElement('div'); btn.className='emoji-opt'; btn.textContent=emoji;
+    btn.addEventListener('click',()=>pickEmoji(emoji));
+    grid.appendChild(btn);
+  });
+  document.getElementById('emojiPickerModal').classList.add('open');
+}
+function pickEmoji(emoji){
+  const d=drinks.find(x=>x.id===emojiTargetId);
+  if(d){
+    d.icon=emoji; saveDrinks();
+    const btn=document.querySelector(`.edit-icon-btn[data-id="${emojiTargetId}"]`);
+    if(btn) btn.childNodes[0].textContent=emoji;
+  }
+  closeEmojiPicker();
+}
+function closeEmojiPicker(){
+  document.getElementById('emojiPickerModal').classList.remove('open');
+  emojiTargetId=null;
+}
+document.getElementById('btnCancelEmoji').addEventListener('click',closeEmojiPicker);
+document.getElementById('emojiPickerModal').addEventListener('click',e=>{
+  if(e.target===document.getElementById('emojiPickerModal')) closeEmojiPicker();
 });
 
 /* ══ MANUAL DATA ══ */
