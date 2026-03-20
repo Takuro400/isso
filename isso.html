@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ISSO – ドリンク出し忘れ防止</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Bebas+Neue&display=swap');
+
+  :root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --card: #0f3460;
+    --accent: #e94560;
+    --amber: #f5a623;
+    --green: #2ecc71;
+    --text: #eaeaea;
+    --muted: #8892a4;
+    --warn-yellow: #f39c12;
+    --warn-red: #e74c3c;
+    --edit-color: #a29bfe;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--surface);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid var(--accent);
+    flex-shrink: 0;
+    transition: border-color 0.3s;
+  }
+  body.edit-mode header { border-color: var(--edit-color); }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+  }
+  .logo span { color: var(--text); }
+
+  .header-right { display: flex; align-items: center; gap: 8px; }
+
+  .total-badge {
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 99px;
+    display: flex; align-items: center; gap: 6px;
+    transition: opacity 0.3s;
+  }
+  body.edit-mode .total-badge { opacity: 0.3; pointer-events: none; }
+  .total-badge .num { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; line-height: 1; }
+
+  /* edit mode toggle button */
+  .btn-edit-toggle {
+    border-radius: 8px;
+    padding: 7px 13px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+    letter-spacing: 0.03em;
+    background: rgba(162,155,254,0.12);
+    border: 1.5px solid var(--edit-color);
+    color: var(--edit-color);
+    white-space: nowrap;
+  }
+  .btn-edit-toggle:active { background: rgba(162,155,254,0.28); }
+  body.edit-mode .btn-edit-toggle {
+    background: var(--edit-color);
+    color: #1a1a2e;
+  }
+
+  /* add button – only in edit mode */
+  .btn-add-card {
+    border-radius: 8px;
+    padding: 7px 11px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: rgba(46,204,113,0.15);
+    border: 1.5px solid var(--green);
+    color: var(--green);
+    display: none;
+    white-space: nowrap;
+  }
+  body.edit-mode .btn-add-card { display: block; }
+  .btn-add-card:active { background: rgba(46,204,113,0.35); }
+
+  /* ── EDIT MODE BAR ── */
+  #editBar {
+    display: none;
+    background: rgba(162,155,254,0.1);
+    border-bottom: 1.5px solid rgba(162,155,254,0.3);
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--edit-color);
+    text-align: center;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+  body.edit-mode #editBar { display: block; }
+
+  /* ── ADVICE BAR ── */
+  #adviceBar {
+    padding: 10px 16px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-align: center;
+    transition: background 0.4s, color 0.4s, opacity 0.3s;
+    flex-shrink: 0;
+    min-height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    letter-spacing: 0.04em;
+  }
+  body.edit-mode #adviceBar { opacity: 0.25; pointer-events: none; }
+  .advice-idle    { background: #1e3a5f; color: #74b9ff; }
+  .advice-busy    { background: var(--warn-red); color: #fff; }
+  .advice-warning { background: var(--warn-yellow); color: #1a1a2e; }
+
+  /* ── GRID ── */
+  #drinkGrid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 10px;
+    overflow-y: auto;
+  }
+
+  /* ── DRINK CARD (normal) ── */
+  .drink-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 14px 10px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    border: 2px solid transparent;
+    transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+    min-height: 180px;
+    user-select: none;
+    overflow: hidden;
+  }
+
+  /* normal warning states */
+  .drink-card.warn-yellow {
+    border-color: var(--warn-yellow);
+    animation: pulseYellow 1.4s ease-in-out infinite;
+  }
+  .drink-card.warn-red {
+    border-color: var(--warn-red);
+    animation: pulseRed 0.9s ease-in-out infinite;
+  }
+  @keyframes pulseYellow {
+    0%,100% { box-shadow: 0 0 0 0 rgba(243,156,18,0); background: var(--card); }
+    50%      { box-shadow: 0 0 18px 6px rgba(243,156,18,0.45); background: #2a2200; }
+  }
+  @keyframes pulseRed {
+    0%,100% { box-shadow: 0 0 0 0 rgba(231,76,60,0); background: var(--card); }
+    50%      { box-shadow: 0 0 22px 8px rgba(231,76,60,0.55); background: #2d0a09; }
+  }
+
+  /* ── CARD EDIT STATE ── */
+  body.edit-mode .drink-card {
+    border-color: rgba(162,155,254,0.4) !important;
+    animation: none !important;
+    background: #151530 !important;
+    box-shadow: none !important;
+    min-height: 190px;
+  }
+
+  /* normal elements – hide in edit mode */
+  body.edit-mode .card-normal { display: none !important; }
+
+  /* edit elements – hidden normally */
+  .card-edit { display: none; }
+  body.edit-mode .card-edit { display: flex; }
+
+  /* ── CARD NORMAL ELEMENTS ── */
+  .drink-icon { font-size: 2.2rem; line-height: 1; }
+  .drink-name { font-size: 0.92rem; font-weight: 700; text-align: center; letter-spacing: 0.02em; }
+
+  .count-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3.8rem;
+    line-height: 1;
+    transition: color 0.3s;
+  }
+  .count-display.zero { color: var(--muted); }
+  .count-display.has-count { color: var(--amber); }
+
+  .btn-order {
+    width: 100%;
+    background: rgba(233,69,96,0.15);
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    border-radius: 8px;
+    padding: 7px 4px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-top: auto;
+    letter-spacing: 0.04em;
+  }
+  .btn-order:active { background: rgba(233,69,96,0.35); }
+
+  .btn-done {
+    width: 100%;
+    background: rgba(46,204,113,0.15);
+    border: 1.5px solid var(--green);
+    color: var(--green);
+    border-radius: 8px;
+    padding: 7px 4px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    letter-spacing: 0.04em;
+  }
+  .btn-done:active { background: rgba(46,204,113,0.35); }
+
+  .timers-area {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    justify-content: center; min-height: 18px;
+  }
+  .timer-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--green); transition: background 0.3s;
+  }
+  .timer-dot.yellow { background: var(--warn-yellow); }
+  .timer-dot.red    { background: var(--warn-red); }
+
+  @keyframes bump {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.25); }
+    100% { transform: scale(1); }
+  }
+  .bump { animation: bump 0.25s ease-out; }
+
+  /* ── CARD EDIT LAYOUT ── */
+  .card-edit {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  /* top row: move + icon + delete */
+  .edit-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 6px;
+  }
+  .move-btns {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .btn-move {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid #3a4a6c;
+    color: var(--muted);
+    border-radius: 6px;
+    width: 28px; height: 26px;
+    font-size: 0.65rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.12s;
+  }
+  .btn-move:active { background: rgba(255,255,255,0.18); color: var(--text); }
+  .btn-move:disabled { opacity: 0.22; pointer-events: none; }
+
+  .icon-btn {
+    font-size: 2rem;
+    background: rgba(162,155,254,0.1);
+    border: 1.5px dashed var(--edit-color);
+    border-radius: 10px;
+    width: 52px; height: 52px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s;
+    position: relative;
+  }
+  .icon-btn::after {
+    content: '✏️';
+    font-size: 0.6rem;
+    position: absolute;
+    bottom: 2px; right: 2px;
+    line-height: 1;
+  }
+  .icon-btn:active { background: rgba(162,155,254,0.25); }
+
+  .btn-delete {
+    background: rgba(231,76,60,0.12);
+    border: 1.5px solid var(--warn-red);
+    color: var(--warn-red);
+    border-radius: 8px;
+    width: 36px; height: 36px;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .btn-delete:active { background: rgba(231,76,60,0.3); }
+
+  /* name input */
+  .name-input {
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border: 1.5px solid rgba(162,155,254,0.4);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 8px 10px;
+    outline: none;
+    text-align: center;
+    transition: border-color 0.2s;
+  }
+  .name-input:focus { border-color: var(--edit-color); }
+
+  /* ── EMOJI MODAL ── */
+  #emojiModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(10,10,20,0.82);
+    align-items: flex-end;
+    justify-content: center;
+  }
+  #emojiModal.open { display: flex; }
+  .emoji-panel {
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    padding: 16px;
+    width: 100%;
+    max-height: 60dvh;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border-top: 2px solid var(--edit-color);
+  }
+  .emoji-panel-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-align: center;
+    letter-spacing: 0.06em;
+  }
+  .emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .emoji-choice {
+    font-size: 1.7rem;
+    text-align: center;
+    padding: 6px 0;
+    border-radius: 10px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.04);
+    border: 1.5px solid transparent;
+    transition: background 0.12s;
+    line-height: 1.3;
+  }
+  .emoji-choice:active { background: rgba(255,255,255,0.18); border-color: var(--edit-color); }
+  .btn-close-emoji {
+    background: rgba(255,255,255,0.07);
+    border: 1.5px solid var(--muted);
+    color: var(--muted);
+    border-radius: 10px;
+    padding: 10px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    font-size: 0.65rem;
+    color: var(--muted);
+    padding: 6px;
+    flex-shrink: 0;
+  }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #2ecc71;
+    color: #0a2e1a;
+    padding: 10px 22px;
+    border-radius: 99px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none;
+    z-index: 200;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">IS<span>SO</span></div>
+  <div class="header-right">
+    <div class="total-badge">
+      未提供&nbsp;<span class="num" id="totalCount">0</span>
+    </div>
+    <button class="btn-add-card" id="btnAddCard">＋ 追加</button>
+    <button class="btn-edit-toggle" id="btnEditToggle">✏️ 編集</button>
+  </div>
+</header>
+
+<div id="editBar">✏️ 編集モード ― アイコン・名前・並び順を変更できます</div>
+<div id="adviceBar" class="advice-idle">☕ 今のうちにジョッキを洗ってください</div>
+<div id="drinkGrid"></div>
+<footer>ISSO v1.2 – ドリンク出し忘れ防止システム</footer>
+
+<!-- EMOJI MODAL -->
+<div id="emojiModal">
+  <div class="emoji-panel">
+    <div class="emoji-panel-title">アイコンを選んでください</div>
+    <div class="emoji-grid" id="emojiGrid"></div>
+    <button class="btn-close-emoji" id="btnCloseEmoji">キャンセル</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ══ CONSTANTS ══ */
+const DEFAULT_DRINKS = [
+  { id: 'beer',     name: '生ビール',     icon: '🍺' },
+  { id: 'highball', name: 'ハイボール',   icon: '🥃' },
+  { id: 'lemon',    name: 'レモンサワー', icon: '🍋' },
+  { id: 'shochu',   name: '焼酎ロック',   icon: '🧊' },
+  { id: 'wine',     name: 'ワイン',       icon: '🍷' },
+  { id: 'oolong',   name: 'ウーロン茶',   icon: '🫖' },
+];
+const EMOJI_LIST = [
+  '🍺','🍻','🥂','🍷','🥃','🍸','🍹','🍾',
+  '🧃','🥤','🫖','☕','🍵','🧋','🧊','🍋',
+  '🍊','🍇','🍓','🫐','🍑','🍒','🍎','🍐',
+  '🌿','🍃','🌸','⭐','💫','🎯','🔥','❄️',
+  '🟡','🟠','🔴','🟣','🔵','🟢','⚪','⚫',
+];
+const WARN_YELLOW_MS = 3 * 60 * 1000;
+const WARN_RED_MS    = 5 * 60 * 1000;
+
+/* ══ STATE ══ */
+let drinks  = [];
+let runtime = {}; // id -> {count, orders:[{orderedAt}]}
+let editMode = false;
+
+/* ══ PERSISTENCE ══ */
+function saveDrinks() {
+  try { localStorage.setItem('isso_drinks_v1', JSON.stringify(drinks)); } catch(e) {}
+}
+function loadDrinks() {
+  try {
+    const s = localStorage.getItem('isso_drinks_v1');
+    if (s) { drinks = JSON.parse(s); return; }
+  } catch(e) {}
+  drinks = DEFAULT_DRINKS.map(d => ({ ...d }));
+}
+function makeId() {
+  return 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+
+/* ══ RUNTIME SYNC ══ */
+function syncRuntime() {
+  const next = {};
+  drinks.forEach(d => { next[d.id] = runtime[d.id] || { count: 0, orders: [] }; });
+  runtime = next;
+}
+
+/* ══ EDIT MODE TOGGLE ══ */
+document.getElementById('btnEditToggle').addEventListener('click', () => {
+  if (editMode) {
+    // Save: collect name inputs
+    collectNameEdits();
+    saveDrinks();
+    editMode = false;
+    document.body.classList.remove('edit-mode');
+    document.getElementById('btnEditToggle').textContent = '✏️ 編集';
+    rebuildGrid();
+    renderTotal();
+    updateAdvice();
+    showToast('保存しました ✓');
+  } else {
+    editMode = true;
+    document.body.classList.add('edit-mode');
+    document.getElementById('btnEditToggle').textContent = '✅ 完了';
+    rebuildGrid();
+  }
+});
+
+document.getElementById('btnAddCard').addEventListener('click', () => {
+  collectNameEdits();
+  drinks.push({ id: makeId(), name: '新しいドリンク', icon: '🍹' });
+  syncRuntime();
+  rebuildGrid();
+  // scroll to bottom
+  const grid = document.getElementById('drinkGrid');
+  setTimeout(() => grid.scrollTo({ top: grid.scrollHeight, behavior: 'smooth' }), 50);
+});
+
+function collectNameEdits() {
+  document.querySelectorAll('.name-input').forEach(input => {
+    const d = drinks.find(x => x.id === input.dataset.id);
+    if (d && input.value.trim()) d.name = input.value.trim();
+  });
+}
+
+/* ══ GRID BUILD ══ */
+function rebuildGrid() {
+  syncRuntime();
+  const grid = document.getElementById('drinkGrid');
+  grid.innerHTML = '';
+  drinks.forEach((drink, idx) => {
+    const card = document.createElement('div');
+    card.className = 'drink-card';
+    card.id = 'card-' + drink.id;
+    card.innerHTML = `
+      <!-- NORMAL VIEW -->
+      <div class="drink-icon card-normal">${drink.icon}</div>
+      <div class="drink-name card-normal">${esc(drink.name)}</div>
+      <div class="count-display zero card-normal" id="count-${drink.id}">0</div>
+      <div class="timers-area card-normal" id="timers-${drink.id}"></div>
+      <button class="btn-order card-normal" data-id="${drink.id}">＋ 注文</button>
+      <button class="btn-done  card-normal" data-id="${drink.id}">✓ 提供完了</button>
+
+      <!-- EDIT VIEW -->
+      <div class="card-edit" style="flex-direction:column;align-items:center;gap:8px;width:100%;">
+        <div class="edit-top-row">
+          <div class="move-btns">
+            <button class="btn-move btn-up" data-id="${drink.id}" ${idx===0?'disabled':''}>▲</button>
+            <button class="btn-move btn-dn" data-id="${drink.id}" ${idx===drinks.length-1?'disabled':''}>▼</button>
+          </div>
+          <button class="icon-btn" data-id="${drink.id}">${drink.icon}</button>
+          <button class="btn-delete" data-id="${drink.id}">🗑</button>
+        </div>
+        <input class="name-input" type="text" value="${esc(drink.name)}" data-id="${drink.id}" maxlength="10" placeholder="ドリンク名">
+      </div>
+    `;
+    grid.appendChild(card);
+    if (!editMode) renderCard(drink.id);
+  });
+}
+
+/* ══ GRID EVENTS ══ */
+document.getElementById('drinkGrid').addEventListener('click', e => {
+  if (editMode) {
+    // Move up
+    const up = e.target.closest('.btn-up');
+    if (up) {
+      collectNameEdits();
+      const i = drinks.findIndex(d => d.id === up.dataset.id);
+      if (i > 0) { [drinks[i-1], drinks[i]] = [drinks[i], drinks[i-1]]; }
+      rebuildGrid(); return;
+    }
+    // Move down
+    const dn = e.target.closest('.btn-dn');
+    if (dn) {
+      collectNameEdits();
+      const i = drinks.findIndex(d => d.id === dn.dataset.id);
+      if (i < drinks.length-1) { [drinks[i], drinks[i+1]] = [drinks[i+1], drinks[i]]; }
+      rebuildGrid(); return;
+    }
+    // Delete
+    const del = e.target.closest('.btn-delete');
+    if (del) {
+      if (drinks.length <= 1) { showToast('最低1つは必要です'); return; }
+      collectNameEdits();
+      drinks = drinks.filter(d => d.id !== del.dataset.id);
+      rebuildGrid(); return;
+    }
+    // Icon
+    const icon = e.target.closest('.icon-btn');
+    if (icon) { openEmojiPicker(icon.dataset.id); return; }
+  } else {
+    // Normal mode
+    const ob = e.target.closest('.btn-order');
+    if (ob) { addOrder(ob.dataset.id); return; }
+    const db = e.target.closest('.btn-done');
+    if (db) { markDone(db.dataset.id); return; }
+  }
+});
+
+/* ══ ORDER LOGIC ══ */
+function addOrder(id) {
+  const s = runtime[id]; if (!s) return;
+  s.count++;
+  s.orders.push({ orderedAt: Date.now() });
+  renderCard(id); renderTotal(); updateAdvice();
+}
+function markDone(id) {
+  const s = runtime[id]; if (!s || s.count <= 0) return;
+  s.count--; s.orders.shift();
+  renderCard(id); renderTotal(); updateAdvice();
+}
+
+function renderCard(id) {
+  const s     = runtime[id];
+  const el    = document.getElementById('count-' + id);
+  const card  = document.getElementById('card-' + id);
+  const tArea = document.getElementById('timers-' + id);
+  if (!s || !el || !card || !tArea) return;
+
+  el.textContent = s.count;
+  el.className = 'count-display card-normal ' + (s.count === 0 ? 'zero' : 'has-count');
+  el.classList.remove('bump');
+  void el.offsetWidth;
+  if (s.count > 0) el.classList.add('bump');
+
+  const now = Date.now();
+  tArea.innerHTML = '';
+  s.orders.forEach(o => {
+    const elapsed = now - o.orderedAt;
+    const dot = document.createElement('div');
+    dot.className = 'timer-dot' + (elapsed >= WARN_RED_MS ? ' red' : elapsed >= WARN_YELLOW_MS ? ' yellow' : '');
+    tArea.appendChild(dot);
+  });
+
+  const maxElapsed = s.orders.reduce((m, o) => Math.max(m, now - o.orderedAt), 0);
+  card.classList.remove('warn-yellow', 'warn-red');
+  if (!editMode && s.count > 0) {
+    if (maxElapsed >= WARN_RED_MS)         card.classList.add('warn-red');
+    else if (maxElapsed >= WARN_YELLOW_MS) card.classList.add('warn-yellow');
+  }
+}
+
+function renderTotal() {
+  const total = drinks.reduce((sum, d) => sum + (runtime[d.id]?.count || 0), 0);
+  document.getElementById('totalCount').textContent = total;
+}
+
+function updateAdvice() {
+  const bar   = document.getElementById('adviceBar');
+  const total = drinks.reduce((sum, d) => sum + (runtime[d.id]?.count || 0), 0);
+  const now   = Date.now();
+  const hasRed = drinks.some(d => (runtime[d.id]?.orders||[]).some(o => now - o.orderedAt >= WARN_RED_MS));
+  bar.className = '';
+  if (total === 0) {
+    bar.className = 'advice-idle';
+    bar.textContent = '☕ 今のうちにジョッキを洗ってください';
+  } else if (total >= 3 || hasRed) {
+    bar.className = 'advice-busy';
+    bar.textContent = '🚨 ドリンク作成を最優先してください！';
+  } else {
+    bar.className = 'advice-warning';
+    bar.textContent = '⚡ ドリンクの注文が入っています！早めに対応しましょう';
+  }
+}
+
+/* ══ EMOJI PICKER ══ */
+let emojiTargetId = null;
+function openEmojiPicker(id) {
+  emojiTargetId = id;
+  const grid = document.getElementById('emojiGrid');
+  grid.innerHTML = '';
+  EMOJI_LIST.forEach(emoji => {
+    const btn = document.createElement('div');
+    btn.className = 'emoji-choice';
+    btn.textContent = emoji;
+    btn.addEventListener('click', () => pickEmoji(emoji));
+    grid.appendChild(btn);
+  });
+  document.getElementById('emojiModal').classList.add('open');
+}
+function pickEmoji(emoji) {
+  const d = drinks.find(x => x.id === emojiTargetId);
+  if (d) {
+    d.icon = emoji;
+    const btn = document.querySelector(`.icon-btn[data-id="${emojiTargetId}"]`);
+    if (btn) btn.childNodes[0].textContent = emoji; // update just text node
+    // rebuild to sync (lightweight)
+    rebuildGrid();
+  }
+  closeEmoji();
+}
+function closeEmoji() {
+  document.getElementById('emojiModal').classList.remove('open');
+  emojiTargetId = null;
+}
+document.getElementById('btnCloseEmoji').addEventListener('click', closeEmoji);
+document.getElementById('emojiModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('emojiModal')) closeEmoji();
+});
+
+/* ══ TOAST ══ */
+let toastT;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ══ TICK ══ */
+setInterval(() => {
+  if (!editMode) {
+    drinks.forEach(d => renderCard(d.id));
+    updateAdvice();
+  }
+}, 10000);
+
+/* ══ INIT ══ */
+loadDrinks();
+syncRuntime();
+rebuildGrid();
+renderTotal();
+updateAdvice();
+</script>
+</body>
+</html>
