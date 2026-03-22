@@ -119,6 +119,95 @@ body {
 .tab-btn .tab-icon { font-size: 1.25rem; line-height: 1; }
 .tab-btn.active { color: var(--kin-light); }
 .tab-btn.active.manual-tab { color: #7ecac4; }
+.tab-btn.active.goal-tab { color: #a0c8b0; }
+
+/* ══════════════════════════════
+   GOAL PAGE
+══════════════════════════════ */
+#pageGoal { background: var(--washi); }
+.goal-page-header {
+  background: var(--sumi); padding: 14px 18px;
+  display: flex; align-items: center;
+  flex-shrink: 0; position: relative;
+}
+.goal-page-header::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--midori), var(--kin), var(--midori));
+}
+.goal-page-title {
+  font-family: 'Kaisei Decol', serif; font-size: 1.2rem;
+  color: var(--washi); letter-spacing: 0.15em;
+}
+.goal-scroll { flex: 1; overflow-y: auto; padding: 16px 16px 24px; }
+.goal-card {
+  background: #fff; border: 1px solid var(--washi-mid);
+  border-radius: 4px; padding: 16px; margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.goal-card-title {
+  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em;
+  color: var(--sumi-light); margin-bottom: 10px;
+  border-bottom: 1px solid var(--washi-mid); padding-bottom: 6px;
+}
+.goal-name-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+}
+.goal-name-label { font-size: 0.78rem; color: var(--sumi-mid); white-space: nowrap; }
+.goal-name-input {
+  flex: 1; border: 1px solid var(--washi-mid); border-radius: 3px;
+  padding: 7px 10px; font-family: 'Shippori Mincho', serif;
+  font-size: 0.88rem; background: var(--washi); color: var(--sumi);
+  outline: none;
+}
+.goal-name-input:focus { border-color: var(--midori); }
+.goal-item-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+}
+.goal-num {
+  font-family: 'Kaisei Decol', serif; font-size: 1rem; color: var(--midori);
+  width: 20px; text-align: center; flex-shrink: 0;
+}
+.goal-input {
+  flex: 1; border: 1px solid var(--washi-mid); border-radius: 3px;
+  padding: 8px 10px; font-family: 'Shippori Mincho', serif;
+  font-size: 0.88rem; background: var(--washi); color: var(--sumi);
+  outline: none;
+}
+.goal-input:focus { border-color: var(--midori); }
+.goal-actions { display: flex; gap: 10px; margin-top: 14px; }
+.btn-goal-save {
+  flex: 1; padding: 11px; background: var(--midori); color: var(--washi);
+  border: none; border-radius: 3px; font-family: 'Shippori Mincho', serif;
+  font-size: 0.85rem; font-weight: 700; letter-spacing: 0.1em; cursor: pointer;
+}
+.btn-goal-save:active { opacity: 0.8; }
+.btn-goal-share {
+  flex: 1; padding: 11px; background: var(--beni); color: var(--washi);
+  border: none; border-radius: 3px; font-family: 'Shippori Mincho', serif;
+  font-size: 0.85rem; font-weight: 700; letter-spacing: 0.1em; cursor: pointer;
+}
+.btn-goal-share:active { opacity: 0.8; }
+.partner-goal-card {
+  background: #f0f7f3; border: 1px solid #b0d8c0;
+  border-radius: 4px; padding: 16px; margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.partner-goal-name {
+  font-family: 'Kaisei Decol', serif; font-size: 1rem;
+  color: var(--midori); margin-bottom: 10px; letter-spacing: 0.1em;
+}
+.partner-goal-item {
+  display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px;
+}
+.partner-goal-item .goal-num { color: var(--midori); }
+.partner-goal-text {
+  font-size: 0.9rem; color: var(--sumi); padding-top: 2px; line-height: 1.5;
+}
+.goal-hint {
+  font-size: 0.75rem; color: var(--sumi-light); text-align: center;
+  margin-top: 4px; letter-spacing: 0.06em;
+}
 
 /* ══════════════════════════════
    TOP PAGE
@@ -757,6 +846,49 @@ mark { background: #fff3cc; color: var(--kin); border-radius:2px; padding:0 2px;
   </div>
 </div>
 
+<!-- ══ GOAL PAGE ══ -->
+<div id="pageGoal" class="page">
+  <div class="goal-page-header">
+    <div class="goal-page-title">🎯 目標共有</div>
+  </div>
+  <div class="goal-scroll">
+    <!-- 自分の目標 -->
+    <div class="goal-card">
+      <div class="goal-card-title">▎ 自分の目標</div>
+      <div class="goal-name-row">
+        <span class="goal-name-label">名前</span>
+        <input type="text" id="goalMyName" class="goal-name-input" placeholder="例: たくろう" maxlength="20">
+      </div>
+      <div class="goal-item-row">
+        <span class="goal-num">①</span>
+        <input type="text" id="goalMy1" class="goal-input" placeholder="目標を入力…" maxlength="60">
+      </div>
+      <div class="goal-item-row">
+        <span class="goal-num">②</span>
+        <input type="text" id="goalMy2" class="goal-input" placeholder="目標を入力…" maxlength="60">
+      </div>
+      <div class="goal-item-row">
+        <span class="goal-num">③</span>
+        <input type="text" id="goalMy3" class="goal-input" placeholder="目標を入力…" maxlength="60">
+      </div>
+      <div class="goal-actions">
+        <button class="btn-goal-save" id="btnGoalSave">💾 保存</button>
+        <button class="btn-goal-share" id="btnGoalShare">🔗 URLをコピー</button>
+      </div>
+      <div class="goal-hint">URLをコピーして相手にLINEで送ろう</div>
+    </div>
+    <!-- 相手の目標 -->
+    <div id="partnerGoalCard" class="partner-goal-card" style="display:none">
+      <div class="goal-card-title">▎ 相手の目標</div>
+      <div class="partner-goal-name" id="partnerGoalName"></div>
+      <div id="partnerGoalItems"></div>
+    </div>
+    <div id="partnerGoalEmpty" class="goal-hint" style="margin-top:8px">
+      相手からURLが届いたら、そのURLを開くと目標が表示されます
+    </div>
+  </div>
+</div>
+
 <!-- ══ TAB BAR ══ -->
 <div id="tabBar">
   <button class="tab-btn active" id="tabTop" onclick="switchTab('top')">
@@ -767,6 +899,9 @@ mark { background: #fff3cc; color: var(--kin); border-radius:2px; padding:0 2px;
   </button>
   <button class="tab-btn manual-tab" id="tabManual" onclick="switchTab('manual')">
     <span class="tab-icon">📋</span>マニュアル
+  </button>
+  <button class="tab-btn goal-tab" id="tabGoal" onclick="switchTab('goal')">
+    <span class="tab-icon">🎯</span>目標
   </button>
 </div>
 
@@ -818,8 +953,8 @@ function grandTotal(){return SEATS.reduce((s,seat)=>s+seatTotal(seat.id),0);}
 
 /* ══ TAB ══ */
 function switchTab(tab){
-  ['pageTop','pageManual','pageOrder','pageEdit'].forEach(id=>document.getElementById(id).classList.remove('active'));
-  ['tabTop','tabManual','tabEdit'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  ['pageTop','pageManual','pageOrder','pageEdit','pageGoal'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  ['tabTop','tabManual','tabEdit','tabGoal'].forEach(id=>document.getElementById(id).classList.remove('active'));
   if(tab==='top'){
     document.getElementById('pageTop').classList.add('active');
     document.getElementById('tabTop').classList.add('active');
@@ -828,6 +963,9 @@ function switchTab(tab){
     document.getElementById('pageEdit').classList.add('active');
     document.getElementById('tabEdit').classList.add('active');
     renderEditPage();
+  } else if(tab==='goal'){
+    document.getElementById('pageGoal').classList.add('active');
+    document.getElementById('tabGoal').classList.add('active');
   } else {
     document.getElementById('pageManual').classList.add('active');
     document.getElementById('tabManual').classList.add('active');
@@ -1328,6 +1466,57 @@ document.getElementById('btnVoiceOrder').addEventListener('click', () => {
 document.getElementById('btnVoiceSearch').addEventListener('click', () => {
   if (voiceRec) closeVoiceModal(); else openVoiceModal('search');
 });
+
+/* ══ GOALS ══ */
+function goalSave(){
+  const data={name:document.getElementById('goalMyName').value.trim(),goals:[document.getElementById('goalMy1').value.trim(),document.getElementById('goalMy2').value.trim(),document.getElementById('goalMy3').value.trim()]};
+  localStorage.setItem('isso_goals',JSON.stringify(data));
+  showToast('目標を保存しました');
+}
+function goalShare(){
+  const data={name:document.getElementById('goalMyName').value.trim(),goals:[document.getElementById('goalMy1').value.trim(),document.getElementById('goalMy2').value.trim(),document.getElementById('goalMy3').value.trim()]};
+  if(!data.name && data.goals.every(g=>!g)){showToast('目標を入力してください');return;}
+  goalSave();
+  const encoded=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  const url=location.origin+location.pathname+'#g='+encoded;
+  navigator.clipboard.writeText(url).then(()=>showToast('URLをコピーしました！LINEで送ってね')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=url;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('URLをコピーしました！LINEで送ってね');
+  });
+}
+function goalLoadMine(){
+  const raw=localStorage.getItem('isso_goals');if(!raw)return;
+  try{const d=JSON.parse(raw);
+    if(d.name)document.getElementById('goalMyName').value=d.name;
+    if(d.goals[0])document.getElementById('goalMy1').value=d.goals[0];
+    if(d.goals[1])document.getElementById('goalMy2').value=d.goals[1];
+    if(d.goals[2])document.getElementById('goalMy3').value=d.goals[2];
+  }catch(e){}
+}
+function goalLoadPartner(){
+  const hash=location.hash;
+  const m=hash.match(/[#&]g=([^&]*)/);
+  if(!m)return;
+  try{
+    const d=JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+    document.getElementById('partnerGoalEmpty').style.display='none';
+    const card=document.getElementById('partnerGoalCard');
+    card.style.display='block';
+    document.getElementById('partnerGoalName').textContent=(d.name||'相手')+'の目標';
+    const nums=['①','②','③'];
+    const list=document.getElementById('partnerGoalItems');list.innerHTML='';
+    (d.goals||[]).forEach((g,i)=>{
+      if(!g)return;
+      const row=document.createElement('div');row.className='partner-goal-item';
+      row.innerHTML=`<span class="goal-num">${nums[i]}</span><span class="partner-goal-text">${g.replace(/</g,'&lt;')}</span>`;
+      list.appendChild(row);
+    });
+    switchTab('goal');
+  }catch(e){}
+}
+document.getElementById('btnGoalSave').addEventListener('click',goalSave);
+document.getElementById('btnGoalShare').addEventListener('click',goalShare);
+goalLoadMine();
+goalLoadPartner();
 
 /* ══ TOAST ══ */
 let toastT;
