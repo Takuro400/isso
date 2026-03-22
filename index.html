@@ -539,6 +539,137 @@ mark { background: #fff3cc; color: var(--kin); border-radius:2px; padding:0 2px;
   border: 1px solid var(--kin);
 }
 #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ══ VOICE INPUT ══ */
+.btn-voice-order {
+  background: rgba(43,90,110,0.7);
+  border: 1px solid rgba(43,90,110,0.9);
+  color: var(--washi);
+  border-radius: 3px;
+  padding: 7px 13px;
+  font-size: 1.15rem;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+.btn-voice-order:active { background: rgba(43,90,110,1); }
+.btn-voice-order.listening {
+  background: var(--beni);
+  border-color: var(--beni-dark);
+  animation: voiceBtnPulse 0.9s ease-in-out infinite;
+}
+
+.btn-voice-search {
+  background: none;
+  border: none;
+  color: var(--sumi-light);
+  font-size: 1.05rem;
+  cursor: pointer;
+  padding: 2px 5px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+.btn-voice-search.listening { color: var(--beni); animation: voiceBtnPulse 0.9s ease-in-out infinite; }
+
+@keyframes voiceBtnPulse {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
+/* ── Voice Modal ── */
+#voiceModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(28,20,16,0.68);
+  z-index: 300;
+  align-items: flex-end;
+  justify-content: center;
+}
+#voiceModal.open { display: flex; }
+
+.voice-panel {
+  background: var(--washi);
+  border-radius: 14px 14px 0 0;
+  padding: 28px 24px 40px;
+  text-align: center;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 -6px 32px rgba(0,0,0,0.28);
+}
+.voice-circle {
+  width: 76px; height: 76px;
+  background: var(--beni);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.1rem;
+  margin: 0 auto 14px;
+  transition: background 0.3s;
+  box-shadow: 0 0 0 0 rgba(181,41,46,0.5);
+  animation: voiceRing 1.2s ease-out infinite;
+}
+.voice-circle.done  { background: var(--midori); animation: none; box-shadow: none; }
+.voice-circle.error { background: var(--sumi-light); animation: none; box-shadow: none; }
+@keyframes voiceRing {
+  0%   { box-shadow: 0 0 0 0   rgba(181,41,46,0.45); }
+  70%  { box-shadow: 0 0 0 18px rgba(181,41,46,0); }
+  100% { box-shadow: 0 0 0 0   rgba(181,41,46,0); }
+}
+
+.voice-waves {
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  height: 28px; margin-bottom: 12px;
+}
+.voice-wave {
+  width: 4px; border-radius: 2px;
+  background: var(--beni);
+  animation: voiceBar 0.8s ease-in-out infinite alternate;
+}
+.voice-wave:nth-child(1){ height:  8px; animation-delay: 0.0s; }
+.voice-wave:nth-child(2){ height: 18px; animation-delay: 0.1s; }
+.voice-wave:nth-child(3){ height: 26px; animation-delay: 0.2s; }
+.voice-wave:nth-child(4){ height: 18px; animation-delay: 0.3s; }
+.voice-wave:nth-child(5){ height:  8px; animation-delay: 0.4s; }
+.voice-waves.idle .voice-wave { animation: none; height: 4px; }
+@keyframes voiceBar {
+  from { transform: scaleY(0.4); }
+  to   { transform: scaleY(1); }
+}
+
+.voice-status {
+  font-size: 0.82rem; color: var(--sumi-light);
+  letter-spacing: 0.12em; margin-bottom: 8px;
+  font-family: 'Shippori Mincho', serif;
+}
+.voice-transcript {
+  font-size: 1.15rem; color: var(--sumi); font-weight: 700;
+  min-height: 2rem; letter-spacing: 0.06em;
+  font-family: 'Shippori Mincho', serif;
+  word-break: break-all;
+}
+.voice-hint {
+  font-size: 0.72rem; color: var(--sumi-light);
+  margin-top: 8px; letter-spacing: 0.06em;
+  font-family: 'Shippori Mincho', serif;
+  line-height: 1.6;
+}
+.btn-voice-cancel {
+  margin-top: 20px;
+  background: none;
+  border: 1px solid var(--washi-mid);
+  color: var(--sumi-light);
+  padding: 9px 30px;
+  border-radius: 3px;
+  font-family: 'Shippori Mincho', serif;
+  cursor: pointer;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  transition: background 0.15s;
+}
+.btn-voice-cancel:active { background: var(--washi-dark); }
 </style>
 </head>
 <body>
@@ -568,6 +699,7 @@ mark { background: #fff3cc; color: var(--kin); border-radius:2px; padding:0 2px;
   <div class="order-header">
     <button class="btn-back" id="btnBack">← 戻る</button>
     <div class="order-title" id="orderTitle">テーブル 1</div>
+    <button class="btn-voice-order" id="btnVoiceOrder" title="音声で注文">🎤</button>
     <button class="btn-clear-all" id="btnClearAll">✓ 全提供</button>
   </div>
   <div class="advice-bar advice-idle" id="orderAdviceBar">このテーブルの注文はありません</div>
@@ -581,6 +713,7 @@ mark { background: #fff3cc; color: var(--kin); border-radius:2px; padding:0 2px;
     <div class="search-wrap">
       <span class="search-icon">🔍</span>
       <input type="text" id="searchInput" placeholder="料理名・手順を検索…">
+      <button class="btn-voice-search" id="btnVoiceSearch" title="音声で検索">🎤</button>
       <button class="btn-clear-search" id="btnClearSearch">✕</button>
     </div>
   </div>
@@ -603,6 +736,24 @@ mark { background: #fff3cc; color: var(--kin); border-radius:2px; padding:0 2px;
     <div class="emoji-panel-title">アイコンを選んでください</div>
     <div class="emoji-grid" id="emojiGrid"></div>
     <button class="btn-cancel-emoji" id="btnCancelEmoji">キャンセル</button>
+  </div>
+</div>
+
+<!-- ══ VOICE MODAL ══ -->
+<div id="voiceModal">
+  <div class="voice-panel">
+    <div class="voice-circle" id="voiceCircle">🎤</div>
+    <div class="voice-waves" id="voiceWaves">
+      <div class="voice-wave"></div>
+      <div class="voice-wave"></div>
+      <div class="voice-wave"></div>
+      <div class="voice-wave"></div>
+      <div class="voice-wave"></div>
+    </div>
+    <div class="voice-status" id="voiceStatus">話しかけてください…</div>
+    <div class="voice-transcript" id="voiceTranscript"></div>
+    <div class="voice-hint" id="voiceHint"></div>
+    <button class="btn-voice-cancel" id="btnVoiceCancel">キャンセル</button>
   </div>
 </div>
 
@@ -991,6 +1142,192 @@ function hl(text,q){
   const e=esc(text),eq=esc(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   return e.replace(new RegExp(eq,'gi'),m=>`<mark>${m}</mark>`);
 }
+
+/* ══ VOICE INPUT ══ */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let voiceRec = null, voiceMode = null; // mode: 'order' | 'search'
+
+/* 全角→半角、漢数字→アラビア数字 */
+function normalizeText(s) {
+  return s
+    .replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/一/g,'1').replace(/二/g,'2').replace(/三/g,'3')
+    .replace(/四/g,'4').replace(/五/g,'5').replace(/六/g,'6')
+    .replace(/七/g,'7').replace(/八/g,'8').replace(/九/g,'9')
+    .replace(/ひとつ|一つ/g,'1つ').replace(/ふたつ|二つ/g,'2つ')
+    .replace(/みっつ|三つ/g,'3つ').replace(/よっつ|四つ/g,'4つ')
+    .replace(/いつつ|五つ/g,'5つ').replace(/ひとり|一人/g,'1つ')
+    .replace(/一杯/g,'1杯').replace(/二杯/g,'2杯').replace(/三杯/g,'3杯')
+    .replace(/四杯/g,'4杯').replace(/五杯/g,'5杯');
+}
+
+/* カタカナ→ひらがな（表記ゆれ吸収） */
+function kata2hira(s) {
+  return s.replace(/[\u30A1-\u30F6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+}
+
+/* テキストにドリンク名が含まれるか（表記ゆれ考慮） */
+function drinkInText(drinkName, text) {
+  if (text.includes(drinkName)) return true;
+  return kata2hira(text).includes(kata2hira(drinkName));
+}
+
+/* 音声テキストを解析してオーダーコマンド群を返す */
+function parseVoiceOrder(rawText) {
+  const t = normalizeText(rawText);
+
+  // 全提供コマンド
+  if (/全提供|全部提供|全クリア|ぜんていきょう|全完了/.test(t)) {
+    return [{ action: 'clearAll' }];
+  }
+
+  const results = [];
+  const used = new Set();
+
+  drinks.forEach(drink => {
+    if (!drinkInText(drink.name, t)) return;
+    const tNorm = kata2hira(t);
+    const nameNorm = kata2hira(drink.name);
+    const pos = tNorm.indexOf(nameNorm);
+    if (pos < 0 || used.has(drink.id)) return;
+    used.add(drink.id);
+
+    // 個数: ドリンク名の前後10文字以内を探索
+    const snippet = t.substring(Math.max(0, pos - 4), pos + drink.name.length + 10);
+    let count = 1;
+    const numMatch = snippet.match(/(\d)(?:つ|杯|個|本|人前)?/);
+    if (numMatch) count = Math.min(9, Math.max(1, parseInt(numMatch[1])));
+
+    // 提供（マイナス）か追加（プラス）か
+    const actionSnippet = t.substring(Math.max(0, pos - 3), pos + drink.name.length + 8);
+    const isRemove = /提供|減らす|マイナス|引く|消す|完了|済み|なし/.test(actionSnippet);
+
+    results.push({ action: isRemove ? 'minus' : 'plus', drink, count });
+  });
+
+  return results.length > 0 ? results : null;
+}
+
+/* オーダーコマンドを適用 */
+function applyVoiceResults(results) {
+  if (!currentSeatId) return;
+  if (!results) { showToast('ドリンクが聞き取れませんでした'); return; }
+  const msgs = [];
+
+  results.forEach(r => {
+    if (r.action === 'clearAll') {
+      orders[currentSeatId] = {};
+      msgs.push('全て提供済み');
+      return;
+    }
+    const arr = getDrinkOrders(currentSeatId, r.drink.id);
+    if (r.action === 'plus') {
+      for (let i = 0; i < r.count; i++) arr.push({ orderedAt: Date.now() });
+      msgs.push(`${r.drink.icon}${r.drink.name}×${r.count} 追加`);
+    } else {
+      const n = Math.min(r.count, arr.length);
+      if (n > 0) { arr.splice(0, n); msgs.push(`${r.drink.icon}${r.drink.name}×${n} 提供済み`); }
+    }
+  });
+
+  saveOrders();
+  renderOrderPage();
+  if (msgs.length) showToast(msgs.join('、'));
+  else showToast('変更できる注文がありませんでした');
+}
+
+/* モーダルを開いて音声認識を開始 */
+function openVoiceModal(mode) {
+  if (!SR) { showToast('このブラウザは音声入力に対応していません'); return; }
+  voiceMode = mode;
+
+  const circle = document.getElementById('voiceCircle');
+  const waves  = document.getElementById('voiceWaves');
+  const status = document.getElementById('voiceStatus');
+  const trans  = document.getElementById('voiceTranscript');
+  const hint   = document.getElementById('voiceHint');
+
+  circle.textContent = '🎤';
+  circle.className = 'voice-circle';
+  waves.className = 'voice-waves';
+  status.textContent = '話しかけてください…';
+  trans.textContent = '';
+  hint.innerHTML = mode === 'order'
+    ? '例：「生ビール2つ」「ハイボール提供」「全提供」<br>複数同時：「レモンサワー3つとウーロン茶1つ」'
+    : '例：「山芋鉄板」「刺し盛り」「焼酎の作り方」';
+
+  document.getElementById('voiceModal').classList.add('open');
+  document.getElementById('btnVoiceOrder').classList.add('listening');
+  document.getElementById('btnVoiceSearch').classList.add('listening');
+
+  voiceRec = new SR();
+  voiceRec.lang = 'ja-JP';
+  voiceRec.continuous = false;
+  voiceRec.interimResults = true;
+  voiceRec.maxAlternatives = 5;
+
+  voiceRec.onresult = e => {
+    let interim = '';
+    for (const result of e.results) interim += result[0].transcript;
+    trans.textContent = interim;
+  };
+
+  voiceRec.onerror = e => {
+    circle.textContent = '❌';
+    circle.className = 'voice-circle error';
+    waves.className = 'voice-waves idle';
+    const errMsg = {
+      'no-speech'  : '音声が検出されませんでした',
+      'not-allowed': 'マイクの使用が許可されていません',
+      'network'    : 'ネットワークエラーが発生しました',
+    };
+    status.textContent = errMsg[e.error] || ('エラー: ' + e.error);
+    setTimeout(closeVoiceModal, 1800);
+  };
+
+  voiceRec.onend = () => {
+    const finalText = trans.textContent.trim();
+    circle.textContent = finalText ? '✅' : '❌';
+    circle.className = 'voice-circle' + (finalText ? ' done' : ' error');
+    waves.className = 'voice-waves idle';
+    if (finalText) status.textContent = '認識完了';
+
+    setTimeout(() => {
+      closeVoiceModal();
+      if (!finalText) return;
+      if (voiceMode === 'order') {
+        applyVoiceResults(parseVoiceOrder(finalText));
+      } else {
+        const si = document.getElementById('searchInput');
+        si.value = finalText;
+        searchQuery = finalText;
+        document.getElementById('btnClearSearch').classList.add('visible');
+        renderManualList();
+        showToast('「' + finalText + '」で検索');
+      }
+    }, 650);
+  };
+
+  voiceRec.start();
+}
+
+function closeVoiceModal() {
+  document.getElementById('voiceModal').classList.remove('open');
+  document.getElementById('btnVoiceOrder').classList.remove('listening');
+  document.getElementById('btnVoiceSearch').classList.remove('listening');
+  if (voiceRec) { try { voiceRec.stop(); } catch(e){} voiceRec = null; }
+}
+
+document.getElementById('btnVoiceCancel').addEventListener('click', closeVoiceModal);
+document.getElementById('voiceModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('voiceModal')) closeVoiceModal();
+});
+document.getElementById('btnVoiceOrder').addEventListener('click', () => {
+  if (voiceRec) closeVoiceModal(); else openVoiceModal('order');
+});
+document.getElementById('btnVoiceSearch').addEventListener('click', () => {
+  if (voiceRec) closeVoiceModal(); else openVoiceModal('search');
+});
 
 /* ══ TOAST ══ */
 let toastT;
